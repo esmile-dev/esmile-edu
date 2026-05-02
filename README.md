@@ -4,9 +4,9 @@
 
 ## 技术栈
 
-- **前端**: Next.js 14+ (App Router)
-- **后端**: Next.js API Routes
-- **数据库**: PostgreSQL + Prisma
+- **前端**: Vue 3 + Vite
+- **后端**: Spring Boot 3.x (Java 17+)
+- **数据库**: PostgreSQL + Spring Data JPA
 - **视频托管**: 腾讯云 VOD
 
 ## MVP 功能
@@ -14,7 +14,6 @@
 - 邮箱 + 验证码登录
 - 课程管理（创建、发布、章节、课时）
 - 视频上传与播放（带防盗链）
-- 试看功能（按课时设置）
 - 兑换码生成与兑换
 
 ## 开发流程

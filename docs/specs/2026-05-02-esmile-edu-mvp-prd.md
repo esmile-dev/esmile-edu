@@ -33,12 +33,10 @@
 - 添加章节（支持多个章节）
 - 添加课时（每个课时含视频）
 - 上传视频：平台内上传 → 腾讯云自动转码
-- 设置试看：按课时设置可试看的前X分钟
 
 学生功能：
 - 购买/兑换课程
 - 观看视频（已购买的课程）
-- 试看未购买课程的前X分钟
 
 ### 2.3 兑换码系统
 
@@ -67,10 +65,10 @@
 
 | 层级 | 技术 | 备注 |
 |------|------|------|
-| 前端 | Next.js 14+ (App Router) | React 框架 |
-| 后端 | Next.js API Routes | 服务端逻辑 |
+| 前端 | Vue 3 + Vite | React 框架 |
+| 后端 | Spring Boot 3.x | Java 17+ |
 | 数据库 | PostgreSQL | 自建在 47.107.163.188 |
-| ORM | Prisma | 数据库操作 |
+| ORM | Spring Data JPA | 数据库操作 |
 | CSS | Tailwind CSS | 样式 |
 | 视频托管 | 腾讯云 VOD | 含自动转码 |
 | 视频防盗 | Referer 防盗链 | 免费、简单 |
@@ -79,16 +77,28 @@
 
 ```
 esmile-edu/
-├── prisma/schema.prisma     # 数据库模型
-├── src/app/                 # Next.js 页面
-│   ├── (auth)/             # 登录、注册
-│   ├── (educator)/         # 教育者后台
-│   ├── (student)/          # 学生后台
-│   ├── (home)/             # 首页等公开页
-│   └── api/                # API 接口
-├── components/             # 通用组件
-├── lib/                    # 工具函数
-└── docs/specs/             # 需求文档
+├── prisma/schema.prisma              # 数据库模型
+├── docs/specs/                       # 需求文档
+├── src/
+│   ├── frontend/                     # Vue 3 前端
+│   │   └── src/
+│   │       ├── student/              # 学生端视图
+│   │       ├── educator/             # 教育者端视图
+│   │       ├── common/               # 公共组件
+│   │       ├── api/                  # API 调用
+│   │       └── router/               # 路由
+│   └── backend/                      # Spring Boot 后端
+│       ├── esmile-edu-common/        # 通用模块
+│       ├── esmile-edu-user/          # 用户模块
+│       │   ├── user-api/             #   用户面
+│       │   └── user-admin/          #   管理面
+│       ├── esmile-edu-course/       # 课程模块
+│       │   ├── course-api/          #   课程面
+│       │   └── course-admin/        #   管理面
+│       ├── esmile-edu-redeem/       # 兑换模块
+│       │   ├── redeem-api/          #   兑换面
+│       │   └── redeem-admin/        #   管理面
+│       └── pom.xml
 ```
 
 ---
@@ -145,7 +155,6 @@ model Lesson {
   videoUrl       String? # 腾讯云 VOD 播放地址
   videoId        String? # 腾讯云 VOD videoId
   duration       Int?    # 视频时长（秒）
-  previewSeconds Int?    # 试看秒数
   order          Int
 
   chapter Chapter @relation(fields: [chapterId], references: [id])
@@ -212,7 +221,7 @@ model RedeemCode {
 |------|------|------|
 | GET | `/api/chapters/[id]/lessons` | 课时列表 |
 | POST | `/api/chapters/[id]/lessons` | 创建课时 |
-| PUT | `/api/lessons/[id]` | 更新课时（含试看设置） |
+| PUT | `/api/lessons/[id]` | 更新课时 |
 | DELETE | `/api/lessons/[id]` | 删除课时 |
 
 ### 兑换码
@@ -264,11 +273,10 @@ model RedeemCode {
 - [ ] 用户可通过邮箱+验证码登录/注册
 - [ ] 教育者可创建课程（草稿/发布）
 - [ ] 教育者可添加章节和课时
-- [ ] 教育者可上传视频并设置试看时长
+- [ ] 教育者可上传视频
 - [ ] 教育者可生成单个兑换码
 - [ ] 学生可输入兑换码兑换课程
 - [ ] 学生可观看已兑换课程的视频
-- [ ] 未购买用户可试看视频前X分钟
 - [ ] 兑换码一次性使用，兑换后失效
 
 ---
