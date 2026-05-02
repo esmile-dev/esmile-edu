@@ -26,5 +26,5 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Local configs (do not push)
+# Local configs
 .claude/toolkit/
