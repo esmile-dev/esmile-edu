@@ -1,8 +1,8 @@
 # esmile 教育平台 - MVP PRD
 
 **日期**: 2026-05-03
-**状态**: 需求澄清完成
-**版本**: v1.0
+**状态**: 需求更新（统一后台 + RBAC）
+**版本**: v2.0
 
 ---
 
@@ -12,7 +12,9 @@
 
 **MVP 目标**: 1个月内上线，验证核心业务流程。
 
-像·**团队**: 2开发 + 1测试
+**团队**: 2开发 + 1测试
+
+**重要变更 (v2.0)**: 教师端与管理端合并为统一后台管理系统，通过 RBAC 权限控制菜单和功能展示。
 
 ---
 
@@ -23,32 +25,80 @@
 | 功能 | 说明 |
 |------|------|
 | 邮箱注册/登录 | 用户通过邮箱和验证码注册和登录 |
-| 角色 | 学生、教师（需审批）、管理员 |
+| 角色 | 学生（独立前端）、教师（需审批）、管理员 |
 | 微信登录 | 后期接入（MVP 排除） |
 
-### 2.2 课程系统
+### 2.2 学生端
 
-教师功能：
-- 创建课程（标题、描述、封面图）
-- 管理课程状态：草稿 ↔ 已发布
-- 添加章节（支持多个章节）
-- 添加课时（每个课时含视频）
-- 上传视频：平台内上传 → 腾讯云自动转码
-- 生成兑换码
+| 功能 | 说明 |
+|------|------|
+| 注册/登录 | 用邮箱和验证码登录 |
+| 兑换课程 | 输入兑换码，开通课程学习权限 |
+| 看视频 | 观看已购买课程的视频 |
 
-学生功能：
-- 购买/兑换课程
-- 观看视频（已购买的课程）
+### 2.3 统一后台管理系统
 
-### 2.3 管理员功能
+**说明**: 教师端和管理端合并为统一后台，通过 RBAC 权限控制菜单和功能。
 
-- 用户管理（审批教师、禁用账号）
-- 课程管理（审核、上下架）
-- 数据统计
+#### 2.3.1 权限模型
 
-### 2.3 兑换码系统
+**角色定义**:
 
-#### 状态定义
+| 角色 | 说明 | 权限范围 |
+|------|------|----------|
+| STUDENT | 学生端（独立系统，不参与合并） | - |
+| TEACHER | 教师 | 课程管理、兑换码管理（仅自己的） |
+| ADMIN | 管理员 | 全部权限 |
+
+**权限定义**:
+
+| 权限代码 | 说明 | TEACHER | ADMIN |
+|----------|------|---------|-------|
+| `user:view` | 查看用户列表 | - | ✓ |
+| `user:approve` | 审批教师注册 | - | ✓ |
+| `user:update` | 修改用户状态 | - | ✓ |
+| `course:view` | 查看课程（自己/全部） | 自己 | 全部 |
+| `course:create` | 创建课程 | ✓ | ✓ |
+| `course:update` | 更新课程 | 自己 | 全部 |
+| `course:delete` | 删除课程 | 自己 | 全部 |
+| `course:audit` | 审核课程 | - | ✓ |
+| `chapter:*` | 章节管理 | 自己课程 | 全部 |
+| `lesson:*` | 课时管理 | 自己课程 | 全部 |
+| `code:view` | 查看兑换码 | 自己 | 全部 |
+| `code:create` | 生成兑换码 | ✓ | ✓ |
+| `stats:view` | 数据统计 | - | ✓ |
+| `system:config` | 系统配置 | - | ✓ |
+
+**权限控制层级**:
+
+1. **菜单级**: 根据用户角色动态渲染菜单项
+2. **按钮级**: `v-permission` 指令控制操作按钮显示
+3. **API 级**: 后端 Spring Security `@PreAuthorize` 注解鉴权
+
+#### 2.3.2 页面结构
+
+统一入口: `/admin/*`
+
+| 路径 | 功能 | 权限 |
+|------|------|------|
+| `/admin/login` | 管理员/教师登录 | 公开 |
+| `/admin/dashboard` | 数据概览 | ADMIN |
+| `/admin/profile` | 个人中心 | 登录用户 |
+| `/admin/users` | 用户管理 | ADMIN |
+| `/admin/users/[id]` | 用户详情 | ADMIN |
+| `/admin/courses` | 课程管理（全部） | ADMIN |
+| `/admin/courses/[id]` | 课程详情 | ADMIN |
+| `/admin/my-courses` | 我的课程 | TEACHER, ADMIN |
+| `/admin/my-courses/new` | 创建课程 | TEACHER, ADMIN |
+| `/admin/my-courses/[id]/edit` | 编辑课程 | TEACHER（自己）, ADMIN |
+| `/admin/my-codes` | 我的兑换码 | TEACHER, ADMIN |
+| `/admin/all-codes` | 全部兑换码 | ADMIN |
+
+---
+
+## 3. 兑换码系统
+
+### 状态定义
 
 | 状态 | 说明 |
 |------|------|
@@ -56,14 +106,14 @@
 | 已兑换 (REDEEMED) | 已被用户使用 |
 | 已失效 (EXPIRED) | 超过有效期未兑换或关联课程被删除 |
 
-#### 状态流转
+### 状态流转
 
 ```
 [生成] → 待兑换 → 已兑换
               ↘ 已失效
 ```
 
-#### 业务规则
+### 业务规则
 
 | 规则 | 说明 |
 |------|------|
@@ -73,7 +123,7 @@
 | 使用次数 | 一次性，兑换后失效 |
 | 绑定对象 | 绑定到用户账号 |
 
-### 2.4 闲鱼集成
+### 3.1 闲鱼集成
 
 | 规则 | 说明 |
 |------|------|
@@ -83,138 +133,327 @@
 
 ---
 
-## 3. 技术方案
+## 4. 技术方案
 
-### 3.1 技术栈
+### 4.1 技术栈
 
 | 层级 | 技术 | 备注 |
 |------|------|------|
-| 后端 | Spring Boot 3.x | Java 25 |
+| 后端 | Spring Boot 3.x + Spring Security 6.x | Java 25 |
 | 数据库 | PostgreSQL | 自建在 47.107.163.188 |
 | ORM | Spring Data JPA | 数据库操作 |
-| CSS | Tailwind CSS | 样式 |
+| 前端 | Vue 3 + Vite + shadcn/ui | 参考 shadcn-vue-admin |
+| 状态管理 | Pinia + pinia-plugin-persistedstate | 权限状态持久化 |
 | 视频托管 | 腾讯云 VOD | 含自动转码 |
 | 视频防盗 | Referer 防盗链 | 免费、简单 |
 
-### 3.2 项目结构
+### 4.2 项目结构
 
 ```
 esmile-edu/
 ├── docs/specs/                       # 需求文档
 ├── frontend/                         # Vue 3 前端
 │   └── src/
-│       ├── student/                  # 学生端
-│       │   ├── views/
-│       │   ├── components/
-│       │   ├── api/
-│       │   └── router/
-│       ├── teacher/                  # 教师端
-│       │   ├── views/
-│       │   ├── components/
-│       │   ├── api/
-│       │   └── router/
-│       ├── admin/                    # 管理端
+│       ├── admin/                    # 统一后台管理系统
+│       │   ├── api/                  # API 定义
+│       │   ├── components/           # 组件
+│       │   │   ├── common/          # 通用组件
+│       │   │   │   └── PermissionWrapper.vue  # 权限包装器
+│       │   │   ├── layout/           # 布局组件
+│       │   │   │   ├── AdminLayout.vue
+│       │   │   │   ├── Sidebar.vue
+│       │   │   │   └── Header.vue
+│       │   │   └── ui/              # shadcn UI 组件
+│       │   ├── directives/           # 指令
+│       │   │   └── permission.ts    # v-permission
+│       │   ├── layouts/              # 布局
+│       │   ├── pages/                # 页面
+│       │   │   ├── admin/           # 后台页面
+│       │   │   │   ├── dashboard/
+│       │   │   │   ├── users/
+│       │   │   │   ├── courses/
+│       │   │   │   └── my-codes/
+│       │   │   └── login.vue
+│       │   ├── router/              # 路由
+│       │   │   ├── index.ts
+│       │   │   ├── routes.ts
+│       │   │   └── guards.ts        # 路由鉴权
+│       │   ├── stores/              # 状态管理
+│       │   │   ├── user.ts         # 用户+权限状态
+│       │   │   └── permission.ts
+│       │   └── types/              # 类型定义
+│       ├── student/                  # 学生端（独立）
 │       │   ├── views/
 │       │   ├── components/
 │       │   ├── api/
 │       │   └── router/
 │       └── common/                   # 公共组件
+│           └── components/ui/        # shadcn UI 组件库
 ├── backend/                          # Spring Boot 后端
-│   ├── esmile-edu-common/            # 通用模块
-│   ├── esmile-edu-user/              # 用户模块
-│   │   ├── api/student/              # 学生 API
-│   │   ├── api/teacher/              # 教师 API
-│   │   └── api/admin/                # 管理 API
-│   ├── esmile-edu-course/            # 课程模块
-│   ├── esmile-edu-redeem/            # 兑换模块
+│   ├── esmile-edu-common/          # 通用模块
+│   │   └── com/esmile/edu/common/
+│   │       ├── config/             # 配置类（SecurityConfig 等）
+│   │       ├── security/           # Spring Security 相关
+│   │       │   ├── JwtAuthFilter.java
+│   │       │   └── JwtProvider.java
+│   │       └── util/              # 工具类
+│   ├── esmile-edu-user/            # 用户模块
+│   │   ├── api/                    # REST 接口
+│   │   └── domain/                 # 领域层
+│   ├── esmile-edu-course/          # 课程模块
+│   ├── esmile-edu-redeem/          # 兑换模块
 │   └── pom.xml
+```
+
+### 4.3 权限控制实现
+
+#### 前端 - 路由守卫
+
+```typescript
+// router/guards.ts
+export async function routerGuard(to, from, next) {
+  const userStore = useUserStore()
+
+  // 公开路由直接通过
+  if (to.meta.public) return next()
+
+  // 检查登录
+  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
+    return next({ name: 'AdminLogin', query: { redirect: to.fullPath } })
+  }
+
+  // 检查角色
+  if (to.meta.roles && !to.meta.roles.includes(userStore.role)) {
+    return next({ name: 'AdminDashboard' })
+  }
+
+  // 检查权限
+  if (to.meta.permission && !userStore.hasPermission(to.meta.permission)) {
+    return next({ name: 'AdminDashboard' })
+  }
+
+  next()
+}
+```
+
+#### 前端 - 按钮权限指令
+
+```typescript
+// directives/permission.ts
+export const permissionDirective = {
+  mounted(el: HTMLElement, binding: DirectiveBinding) {
+    const { value } = binding
+    const userPermissions = userStore.permissions
+
+    if (Array.isArray(value)) {
+      if (!value.some(p => userPermissions.includes(p))) {
+        el.remove()
+      }
+    } else {
+      if (!userPermissions.includes(value)) {
+        el.remove()
+      }
+    }
+  }
+}
+
+// 使用: <Button v-permission="'user:create'">创建用户</Button>
+```
+
+#### 后端 - Spring Security 6
+
+**安全配置**:
+
+```java
+@Configuration
+@EnableMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/v1/admin/auth/**").permitAll()
+                .requestMatchers("/api/v1/student/auth/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+}
+```
+
+**权限校验**:
+
+```java
+// 使用 Spring Security @PreAuthorize 注解
+@GetMapping
+@PreAuthorize("hasAuthority('user:view')")
+public ApiResponse<List<UserResponse>> listUsers() { ... }
+
+// 多个权限（OR 关系）
+@PostMapping
+@PreAuthorize("hasAnyAuthority('user:create', 'user:update')")
+public ApiResponse<Void> createUser() { ... }
+
+// 角色校验
+@PreAuthorize("hasRole('ADMIN')")
+public ApiResponse<Void> adminOnly() { ... }
+```
+
+**JWT 认证过滤器**:
+
+```java
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+        String token = extractToken(request);
+
+        if (token != null && jwtProvider.validateToken(token)) {
+            String userId = jwtProvider.getUserId(token);
+            List<String> permissions = jwtProvider.getPermissions(token);
+
+            // 构建 SecurityContext
+            UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userId, null,
+                    permissions.stream()
+                        .map(p -> new SimpleGrantedAuthority("ROLE_" + p))  // ROLE_TEACHER, ROLE_ADMIN
+                        .toList());
+
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
 ```
 
 ---
 
-## 4. 数据模型
+## 5. 数据模型
 
-### 4.1 枚举定义
+```prisma
+enum Role { STUDENT TEACHER ADMIN }
+enum UserStatus { ACTIVE PENDING_APPROVAL DISABLED }
+enum CourseStatus { DRAFT PUBLISHED }
+enum EnrollmentStatus { ACTIVE EXPIRED }
+enum RedeemCodeStatus { PENDING REDEEMED EXPIRED }
 
-| 枚举 | 值 |
-|------|-----|
-| Role | STUDENT, TEACHER, ADMIN |
-| UserStatus | ACTIVE, PENDING_APPROVAL, DISABLED |
-| CourseStatus | DRAFT, PUBLISHED |
-| EnrollmentStatus | ACTIVE, EXPIRED |
+// === 用户与权限 ===
 
-### 4.2 数据表
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  nickname  String
+  avatar    String?
+  role      Role     @default(STUDENT)
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
 
-**users**
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGSERIAL | 主键 |
-| email | VARCHAR(255) | 唯一邮箱 |
-| nickname | VARCHAR(100) | 昵称 |
-| avatar | VARCHAR(500) | 头像URL |
-| role | VARCHAR(20) | STUDENT/TEACHER/ADMIN |
-| status | VARCHAR(20) | ACTIVE/PENDING_APPROVAL/DISABLED |
-| created_at | TIMESTAMP | 创建时间 |
+  courses     Course[]
+  enrollments Enrollment[]
+  redeemedCodes RedeemCode[] @relation("RedeemedBy")
+}
 
-**courses**
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGSERIAL | 主键 |
-| educator_id | BIGINT | 教师ID |
-| title | VARCHAR(200) | 课程标题 |
-| description | TEXT | 课程描述 |
-| cover_image | VARCHAR(500) | 封面图URL |
-| status | VARCHAR(20) | DRAFT/PUBLISHED |
-| created_at | TIMESTAMP | 创建时间 |
+// 角色实体（用于 RBAC）
+model RoleEntity {
+  id     String @id @default(uuid())
+  code   String @unique  // ADMIN, TEACHER
+  name   String
 
-**chapters**
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGSERIAL | 主键 |
-| course_id | BIGINT | 课程ID |
-| title | VARCHAR(200) | 章节标题 |
-| order_num | INT | 排序 |
+  permissions Permission[]
+  users       User[]
+}
 
-**lessons**
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGSERIAL | 主键 |
-| chapter_id | BIGINT | 章节ID |
-| title | VARCHAR(200) | 课时标题 |
-| video_url | VARCHAR(500) | 腾讯云VOD播放地址 |
-| video_id | VARCHAR(100) | 腾讯云VOD videoId |
-| duration | INT | 视频时长（秒） |
-| order_num | INT | 排序 |
+// 权限定义
+model Permission {
+  id     String @id @default(uuid())
+  code   String @unique  // user:view, course:create, etc.
+  name   String
+  remark String?
 
-**enrollments**
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGSERIAL | 主键 |
-| user_id | BIGINT | 用户ID |
-| course_id | BIGINT | 课程ID |
-| status | VARCHAR(20) | ACTIVE/EXPIRED |
-| expires_at | TIMESTAMP | 权限到期时间 |
-| created_at | TIMESTAMP | 创建时间 |
+  roles RoleEntity[]
+}
 
-**redeem_codes**
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | BIGSERIAL | 主键 |
-| code | VARCHAR(20) | 8位兑换码 |
-| course_id | BIGINT | 课程ID |
-| status | VARCHAR(20) | PENDING/REDEEMED/EXPIRED |
-| used_by | BIGINT | 使用者ID |
-| used_at | TIMESTAMP | 使用时间 |
-| expires_at | TIMESTAMP | 兑换码有效期 |
-| course_expires_at | TIMESTAMP | 兑换后课程权限期限 |
-| created_at | TIMESTAMP | 创建时间 |
->>>>>>> Stashed changes
+// === 课程相关 ===
+
+model Course {
+  id          String       @id @default(uuid())
+  educatorId  String
+  title       String
+  description String?
+  coverImage  String?
+  status      CourseStatus @default(DRAFT)
+  createdAt   DateTime     @default(now())
+
+  educator    User         @relation(fields: [educatorId], references: [id])
+  chapters    Chapter[]
+  enrollments Enrollment[]
+  redeemCodes RedeemCode[]
+}
+
+model Chapter {
+  id        String @id @default(uuid())
+  courseId  String
+  title     String
+  order     Int
+
+  course  Course   @relation(fields: [courseId], references: [id])
+  lessons Lesson[]
+}
+
+model Lesson {
+  id             String  @id @default(uuid())
+  chapterId      String
+  title          String
+  videoUrl       String? // 腾讯云 VOD 播放地址
+  videoId        String? // 腾讯云 VOD videoId
+  duration       Int?    // 视频时长（秒）
+  order          Int
+
+  chapter Chapter @relation(fields: [chapterId], references: [id])
+}
+
+model Enrollment {
+  id        String            @id @default(uuid())
+  userId    String
+  courseId  String
+  status    EnrollmentStatus  @default(ACTIVE)
+  expiresAt DateTime?         // 课程权限到期时间
+  createdAt DateTime          @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+}
+
+model RedeemCode {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  courseId        String
+  status          RedeemCodeStatus @default(PENDING)
+  expiresAt       DateTime
+  redeemedBy      String?
+  redeemedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  course   Course @relation(fields: [courseId], references: [id])
+  redeemer User?  @relation("RedeemedBy", fields: [redeemedBy], references: [id])
+}
+```
 
 ---
 
-## 5. API 设计
+## 6. API 设计
 
-### 学生 API (`/api/v1/student/*`)
+### 6.1 学生端 API (`/api/v1/student/*`)
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/api/v1/student/auth/send-code` | 发送邮箱验证码 |
@@ -225,41 +464,50 @@ esmile-edu/
 | POST | `/api/v1/student/codes/redeem` | 兑换课程 |
 | GET | `/api/v1/student/my-courses` | 我的课程 |
 
-### 教师 API (`/api/v1/teacher/*`)
+### 6.2 统一后台 API (`/api/v1/admin/*`)
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/api/v1/admin/auth/send-code` | - | 发送验证码 |
+| POST | `/api/v1/admin/auth/verify-code` | - | 验证登录 |
+| GET | `/api/v1/admin/auth/me` | - | 当前用户信息 |
+| GET | `/api/v1/admin/users` | user:view | 用户列表 |
+| GET | `/api/v1/admin/users/[id]` | user:view | 用户详情 |
+| PUT | `/api/v1/admin/users/[id]/approve` | user:approve | 审批教师 |
+| PUT | `/api/v1/admin/users/[id]/status` | user:update | 修改用户状态 |
+| GET | `/api/v1/admin/courses` | course:view | 课程列表（全部） |
+| GET | `/api/v1/admin/courses/[id]` | course:view | 课程详情 |
+| PUT | `/api/v1/admin/courses/[id]/audit` | course:audit | 审核课程 |
+| GET | `/api/v1/admin/teacher-courses` | course:view | 教师课程列表 |
+| GET | `/api/v1/admin/stats` | stats:view | 数据统计 |
+| GET | `/api/v1/admin/redeem-codes` | code:view | 兑换码列表（全部） |
+
+### 6.3 教师自有课程 API (`/api/v1/teacher/*`)
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/v1/teacher/courses` | course:view | 我的课程列表 |
+| POST | `/api/v1/teacher/courses` | course:create | 创建课程 |
+| GET | `/api/v1/teacher/courses/[id]` | course:view | 课程详情 |
+| PUT | `/api/v1/teacher/courses/[id]` | course:update | 更新课程 |
+| DELETE | `/api/v1/teacher/courses/[id]` | course:delete | 删除课程 |
+| POST | `/api/v1/teacher/chapters` | chapter:create | 创建章节 |
+| PUT | `/api/v1/teacher/chapters/[id]` | chapter:update | 更新章节 |
+| DELETE | `/api/v1/teacher/chapters/[id]` | chapter:delete | 删除章节 |
+| POST | `/api/v1/teacher/lessons` | lesson:create | 创建课时 |
+| PUT | `/api/v1/teacher/lessons/[id]` | lesson:update | 更新课时 |
+| DELETE | `/api/v1/teacher/lessons/[id]` | lesson:delete | 删除课时 |
+| GET | `/api/v1/teacher/my-codes` | code:view | 我的兑换码 |
+| POST | `/api/v1/teacher/codes` | code:create | 生成兑换码 |
+
+### 6.4 外部系统 API (`/api/v1/redeem-codes/*`)
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/v1/teacher/auth/send-code` | 发送邮箱验证码 |
-| POST | `/api/v1/teacher/auth/verify-code` | 验证并登录 |
-| GET | `/api/v1/teacher/auth/me` | 获取当前用户 |
-| GET | `/api/v1/teacher/courses` | 我的课程列表 |
-| POST | `/api/v1/teacher/courses` | 创建课程 |
-| GET | `/api/v1/teacher/courses/[id]` | 课程详情 |
-| PUT | `/api/v1/teacher/courses/[id]` | 更新课程 |
-| DELETE | `/api/v1/teacher/courses/[id]` | 删除课程 |
-| POST | `/api/v1/teacher/chapters` | 创建章节 |
-| PUT | `/api/v1/teacher/chapters/[id]` | 更新章节 |
-| DELETE | `/api/v1/teacher/chapters/[id]` | 删除章节 |
-| POST | `/api/v1/teacher/lessons` | 创建课时 |
-| PUT | `/api/v1/teacher/lessons/[id]` | 更新课时 |
-| DELETE | `/api/v1/teacher/lessons/[id]` | 删除课时 |
+| POST | `/api/v1/redeem-codes/apply` | 生成兑换码（外部调用） |
 
-### 外部系统 API (`/api/v1/redeem-codes/*`)
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/v1/redeem-codes/apply` | 生成兑换码 |
+### 6.5 视频上传 API
 
-### 管理员 API (`/api/v1/admin/*`)
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/v1/admin/auth/login` | 管理员登录 |
-| GET | `/api/v1/admin/users` | 用户列表 |
-| PUT | `/api/v1/admin/users/[id]/approve` | 审批教师 |
-| PUT | `/api/v1/admin/users/[id]/status` | 修改用户状态 |
-| GET | `/api/v1/admin/courses` | 所有课程 |
-| PUT | `/api/v1/admin/courses/[id]/status` | 修改课程状态 |
-| GET | `/api/v1/admin/stats` | 数据统计 |
-
-### 视频上传
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/v1/teacher/video/apply-upload` | 申请上传 |
@@ -267,14 +515,16 @@ esmile-edu/
 
 ---
 
-## 6. 页面结构
+## 7. 页面结构
 
 ### 公开页面
+
 | 路径 | 功能 |
 |------|------|
 | `/` | 首页 |
 
 ### 学生端 (`/student/*`)
+
 | 路径 | 功能 |
 |------|------|
 | `/student/login` | 登录 |
@@ -285,33 +535,32 @@ esmile-edu/
 | `/student/my-courses` | 已购课程 |
 | `/student/redeem` | 兑换课程 |
 
-### 教师端 (`/teacher/*`)
-| 路径 | 功能 |
-|------|------|
-| `/teacher/login` | 登录 |
-| `/teacher/register` | 注册（待审批） |
-| `/teacher/dashboard` | 个人中心 |
-| `/teacher/courses` | 我的课程 |
-| `/teacher/courses/new` | 创建课程 |
-| `/teacher/courses/[id]/edit` | 编辑课程 |
-| `/teacher/codes` | 兑换码管理 |
+### 统一后台 (`/admin/*`)
 
-### 管理端 (`/admin/*`)
-| 路径 | 功能 |
-|------|------|
-| `/admin/login` | 管理员登录 |
-| `/admin/dashboard` | 数据概览 |
-| `/admin/users` | 用户管理 |
-| `/admin/users/[id]` | 用户详情/审批 |
-| `/admin/courses` | 课程管理 |
+| 路径 | 功能 | 权限 |
+|------|------|------|
+| `/admin/login` | 登录 | 公开 |
+| `/admin/dashboard` | 数据概览 | ADMIN |
+| `/admin/profile` | 个人中心 | 登录用户 |
+| `/admin/users` | 用户管理 | ADMIN |
+| `/admin/users/[id]` | 用户详情 | ADMIN |
+| `/admin/courses` | 全部课程 | ADMIN |
+| `/admin/courses/[id]` | 课程详情 | ADMIN |
+| `/admin/my-courses` | 我的课程 | TEACHER, ADMIN |
+| `/admin/my-courses/new` | 创建课程 | TEACHER, ADMIN |
+| `/admin/my-courses/[id]/edit` | 编辑课程 | TEACHER（自己）, ADMIN |
+| `/admin/my-codes` | 我的兑换码 | TEACHER, ADMIN |
+| `/admin/all-codes` | 全部兑换码 | ADMIN |
 
 ---
 
-## 7. 验收标准
+## 8. 验收标准
 
 - [ ] 学生可通过邮箱+验证码登录/注册
+- [ ] 教师/管理员可通过统一后台登录
 - [ ] 教师可通过邮箱+验证码注册（需管理员审批）
 - [ ] 管理员可审批教师注册申请
+- [ ] 管理员可管理用户状态
 - [ ] 教师可创建课程（草稿/发布）
 - [ ] 教师可添加章节和课时
 - [ ] 教师可上传视频
@@ -319,12 +568,13 @@ esmile-edu/
 - [ ] 学生可输入兑换码兑换课程
 - [ ] 学生可观看已兑换课程的视频
 - [ ] 兑换码一次性使用，兑换后失效
-- [ ] 管理员可管理用户状态
 - [ ] 管理员可查看数据统计
+- [ ] 不同角色看到不同菜单（RBAC 菜单级控制）
+- [ ] 无权限用户无法访问对应 API（RBAC API 级控制）
 
 ---
 
-## 8. MVP 排除项（后期迭代）
+## 9. MVP 排除项（后期迭代）
 
 - 微信登录
 - 作业批改
@@ -335,8 +585,9 @@ esmile-edu/
 
 ---
 
-## 9. 待确认
+## 10. 待确认
 
 - [ ] 腾讯云 VOD 控制台配置（防盗链、域名）
 - [ ] 服务器 PostgreSQL 安装配置
 - [ ] 邮件服务配置（发送验证码）
+- [ ] 权限数据初始化（RoleEntity, Permission 表数据）
