@@ -6,7 +6,11 @@
 
 **当前阶段**: MVP 开发中
 
-**技术栈**: Next.js 14+ / Prisma / PostgreSQL / 腾讯云 VOD
+**技术栈**:
+- 前端：Vue 3 + Vite + shadcn/ui
+- 后端：Spring Boot 3.x (Java 17+) + Spring Data JPA
+- 数据库：PostgreSQL
+- 视频托管：腾讯云 VOD
 
 ---
 
@@ -37,7 +41,232 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 
 ---
 
-## 3. 开发流程
+## 3. 后端规范 (Spring Boot 3.x)
+
+### 3.1 技术版本
+
+| 组件 | 版本 |
+|------|------|
+| Java | 17 LTS+ |
+| Spring Boot | 3.3.x |
+| PostgreSQL | 15+ |
+| JPA/Hibernate | 6.x |
+
+**重要**: Spring Boot 3.x 使用 `jakarta.*` 命名空间（原 `javax.*` 已废弃）
+
+---
+
+### 3.2 模块结构
+
+```
+src/backend/
+├── esmile-edu-common/              # 通用模块
+│   └── com/esmile/edu/common/
+│       ├── config/                 # 配置类
+│       ├── exception/              # 异常定义
+│       ├── response/               # 统一响应
+│       └── util/                   # 工具类
+├── esmile-edu-user/                # 用户模块
+│   └── com/esmile/edu/user/
+│       ├── domain/                 # 领域层
+│       │   ├── model/              # 实体、值对象
+│       │   ├── repository/         # 仓储接口
+│       │   └── service/            # 领域服务
+│       ├── application/            # 应用层
+│       │   ├── dto/               # 数据传输对象
+│       │   ├── service/            # 应用服务
+│       │   └── port/               # 端口接口
+│       ├── infrastructure/         # 基础设施层
+│       │   └── persistence/        # 持久化适配器
+│       ├── api/                    # 用户端 REST 接口
+│       └── admin/                  # 管理端 REST 接口
+├── esmile-edu-course/              # 课程模块
+└── esmile-edu-redeem/              # 兑换码模块
+```
+
+**包名规范**:
+- 使用 `module.user` 而非 `module-user`（Java 包名禁止使用连字符）
+
+---
+
+### 3.3 API 响应格式
+
+```java
+public record ApiResponse<T>(
+    int code,
+    String message,
+    T data
+) {
+    public static <T> ApiResponse<T> ok(T data) {
+        return new ApiResponse<>(200, "Success", data);
+    }
+
+    public static <T> ApiResponse<T> created(T data) {
+        return new ApiResponse<>(201, "Created", data);
+    }
+
+    public static <T> ApiResponse<T> error(int code, String message) {
+        return new ApiResponse<>(code, message, null);
+    }
+}
+```
+
+**响应头** (通过 Filter 全局设置):
+- `X-Request-Id`: 请求追踪 ID
+- `X-Response-Time`: 响应时间
+
+---
+
+### 3.4 异常处理
+
+**异常基类**:
+```java
+public abstract class BusinessException extends RuntimeException {
+    private final int code;
+    public BusinessException(int code, String message) { ... }
+    public int getCode() { return code; }
+}
+```
+
+**全局处理器**:
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ApiResponse<Void> handleValidation(MethodArgumentNotValidException ex) {
+        // 收集字段错误，返回 400
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ApiResponse<Void> handleNotFound(EntityNotFoundException ex) {
+        return ApiResponse.error(404, ex.getMessage());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ApiResponse<Void> handleBusiness(BusinessException ex) {
+        return ApiResponse.error(ex.getCode(), ex.getMessage());
+    }
+}
+```
+
+---
+
+### 3.5 JPA 实体规范
+
+**基础实体**:
+```java
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity {
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+}
+```
+
+**实体示例**:
+```java
+@Entity
+@Table(name = "users")
+public class User extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String nickname;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+}
+```
+
+**注意**:
+- 使用 `@Table` 显式指定表名
+- 优先使用 `@GeneratedValue(strategy = GenerationType.IDENTITY)` for PostgreSQL
+- 不要在实体字段中使用 `Optional<>`（JPA 不支持）
+
+---
+
+### 3.6 DTO 规范
+
+**使用 Java Record** (Java 17+):
+```java
+public record CreateUserRequest(
+    @NotBlank @Email String email,
+    @NotBlank @Size(min = 8) String password,
+    String nickname
+) {}
+
+public record UserResponse(Long id, String email, String nickname, Role role) {}
+```
+
+**验证注解**:
+- `@NotNull` - 非空（用于必须字段）
+- `@NotBlank` - 非空字符串
+- `@Email` - 邮箱格式
+- `@Size(min, max)` - 长度限制
+- `@Min` / `@Max` - 数值范围
+
+---
+
+### 3.7 REST API 规范
+
+**URL 规范**:
+- 使用名词复数: `/api/v1/users`, `/api/v1/courses`
+- 嵌套资源: `/api/v1/courses/{courseId}/chapters`
+- 不使用动词: `/api/v1/users` 而非 `/api/v1/getUsers`
+
+**HTTP 方法**:
+| 方法 | 用途 | 响应码 |
+|------|------|--------|
+| GET | 查询 | 200 |
+| POST | 创建 | 201 |
+| PUT | 全量更新 | 200 |
+| PATCH | 部分更新 | 200 |
+| DELETE | 删除 | 204 |
+
+**版本控制**: URL 路径 `/api/v1/`
+
+---
+
+## 4. 前端规范 (Vue 3)
+
+### 4.1 项目结构
+
+```
+src/frontend/src/
+├── student/                # 学生端视图
+│   ├── views/
+│   ├── components/
+│   └── router/
+├── educator/               # 教育者端视图
+│   ├── views/
+│   ├── components/
+│   └── router/
+├── common/                 # 公共组件
+├── api/                    # API 调用层
+├── assets/                 # 静态资源
+└── router/                 # 路由配置
+```
+
+### 4.2 shadcn/ui 使用规范
+
+- 组件存放于 `@/common/components/ui/`
+- 使用 `cn()` 工具类合并 class
+- 遵循 shadcn 设计规范
+
+---
+
+## 5. 开发流程
 
 ### PRD → 设计 → 实现
 
@@ -53,41 +282,50 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 
 ---
 
-## 4. 目录结构
+## 6. 目录结构
 
 ```
 esmile-edu/
-├── docs/specs/          # 需求和设计文档
-├── prisma/              # 数据库模型
+├── docs/specs/              # 需求和设计文档
 ├── src/
-│   ├── app/             # Next.js App Router
-│   │   ├── (auth)/      # 认证页面
-│   │   ├── (educator)/  # 教育者端
-│   │   ├── (student)/   # 学生端
-│   │   ├── (home)/      # 公开页面
-│   │   └── api/         # API Routes
-│   ├── components/      # 通用组件
-│   ├── lib/             # 工具函数
-│   └── hooks/           # React Hooks
-└── .worktrees/          # 工作树目录（已忽略）
+│   ├── frontend/             # Vue 3 前端
+│   │   └── src/
+│   │       ├── student/      # 学生端
+│   │       ├── educator/     # 教育者端
+│   │       ├── common/       # 公共组件
+│   │       ├── api/          # API 调用
+│   │       └── router/       # 路由
+│   └── backend/              # Spring Boot 后端
+│       ├── esmile-edu-common/
+│       ├── esmile-edu-user/
+│       ├── esmile-edu-course/
+│       └── esmile-edu-redeem/
+└── .worktrees/               # 工作树目录（已忽略）
 ```
 
 ---
 
-## 5. 环境配置
+## 7. 环境配置
 
 ### 必需环境变量
 
+**后端**:
 ```env
-DATABASE_URL=           # PostgreSQL 连接
-NEXTAUTH_SECRET=        # 认证密钥
-TENCENT_VOD_SECRET_ID=   # 腾讯云 VOD
-TENCENT_VOD_SECRET_KEY=  # 腾讯云 VOD
+SPRING_DATASOURCE_URL=       # PostgreSQL 连接
+SPRING_DATASOURCE_USERNAME=  # 数据库用户名
+SPRING_DATASOURCE_PASSWORD=  # 数据库密码
+TENCENT_VOD_SECRET_ID=       # 腾讯云 VOD
+TENCENT_VOD_SECRET_KEY=      # 腾讯云 VOD
+```
+
+**前端**:
+```env
+VITE_API_BASE_URL=           # API 基础路径
 ```
 
 ---
 
-## 6. 质量标准
+## 8. 质量标准
 
 - 测试覆盖率 > 80%
 - 所有 Critical/Important 问题必须在合并前修复
@@ -95,7 +333,7 @@ TENCENT_VOD_SECRET_KEY=  # 腾讯云 VOD
 
 ---
 
-## 7. 参考 Skills
+## 9. 参考 Skills
 
 - `superpowers:using-git-worktrees` - 创建隔离工作区
 - `superpowers:finishing-a-development-branch` - 结束开发分支
