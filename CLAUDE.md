@@ -48,6 +48,19 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 
 1. **开始工作前**: 使用 `using-git-worktrees` skill 创建隔离工作区
 2. **创建功能分支**: 从 dev 创建 `feature/xxx` 或 `fix/xxx`
+
+### Git 安全规则
+
+**禁止行为**:
+- ❌ 禁止 `git add -A` 或 `git add .`（必须先确认文件列表）
+- ❌ 禁止提交 `.claude/`、`toolkit/`、`node_modules/`、`.env` 等本地/敏感文件
+- ❌ 禁止 `git push --force` 到 main/master 分支
+
+**安全检查清单**:
+执行 `git add` 前必须：
+1. 先执行 `git status --short` 查看变更文件
+2. 确认没有敏感文件（.claude/、.env、凭据等）
+3. 使用 `git add <specific-files>` 而非全量 add
 3. **开发中**: 使用 TDD 方法，参考 `superpowers:test-driven-development`
 4. **每个任务完成后**: 使用 `requesting-code-review` skill 进行代码审查
 5. **合并到 dev**: 代码审查通过后，合并到 dev 分支
