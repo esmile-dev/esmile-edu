@@ -134,95 +134,81 @@ esmile-edu/
 
 ## 4. 数据模型
 
-```prisma
-enum Role { STUDENT TEACHER ADMIN }
-enum UserStatus { ACTIVE PENDING_APPROVAL DISABLED }
-enum CourseStatus { DRAFT PUBLISHED }
-enum EnrollmentStatus { ACTIVE EXPIRED }
+### 4.1 枚举定义
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  nickname  String
-  avatar    String?
-  role      Role     @default(STUDENT)
-  status    UserStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
+| 枚举 | 值 |
+|------|-----|
+| Role | STUDENT, TEACHER, ADMIN |
+| UserStatus | ACTIVE, PENDING_APPROVAL, DISABLED |
+| CourseStatus | DRAFT, PUBLISHED |
+| EnrollmentStatus | ACTIVE, EXPIRED |
 
-  courses     Course[]
-  enrollments Enrollment[]
-  redeemedCodes RedeemCode[] @relation("RedeemedBy")
-}
+### 4.2 数据表
 
-model Course {
-  id          String       @id @default(uuid())
-  educatorId  String
-  title       String
-  description String?
-  coverImage  String?
-  status      CourseStatus @default(DRAFT)
-  createdAt   DateTime     @default(now())
+**users**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| email | VARCHAR(255) | 唯一邮箱 |
+| nickname | VARCHAR(100) | 昵称 |
+| avatar | VARCHAR(500) | 头像URL |
+| role | VARCHAR(20) | STUDENT/TEACHER/ADMIN |
+| status | VARCHAR(20) | ACTIVE/PENDING_APPROVAL/DISABLED |
+| created_at | TIMESTAMP | 创建时间 |
 
-  educator    User         @relation(fields: [educatorId], references: [id])
-  chapters    Chapter[]
-  enrollments Enrollment[]
-  redeemCodes RedeemCode[]
-}
+**courses**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| educator_id | BIGINT | 教师ID |
+| title | VARCHAR(200) | 课程标题 |
+| description | TEXT | 课程描述 |
+| cover_image | VARCHAR(500) | 封面图URL |
+| status | VARCHAR(20) | DRAFT/PUBLISHED |
+| created_at | TIMESTAMP | 创建时间 |
 
-model Chapter {
-  id        String @id @default(uuid())
-  courseId  String
-  title     String
-  order     Int
+**chapters**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| course_id | BIGINT | 课程ID |
+| title | VARCHAR(200) | 章节标题 |
+| order_num | INT | 排序 |
 
-  course  Course   @relation(fields: [courseId], references: [id])
-  lessons Lesson[]
-}
+**lessons**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| chapter_id | BIGINT | 章节ID |
+| title | VARCHAR(200) | 课时标题 |
+| video_url | VARCHAR(500) | 腾讯云VOD播放地址 |
+| video_id | VARCHAR(100) | 腾讯云VOD videoId |
+| duration | INT | 视频时长（秒） |
+| order_num | INT | 排序 |
 
-model Lesson {
-  id             String  @id @default(uuid())
-  chapterId      String
-  title          String
-  videoUrl       String? # 腾讯云 VOD 播放地址
-  videoId        String? # 腾讯云 VOD videoId
-  duration       Int?    # 视频时长（秒）
-  order          Int
+**enrollments**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| user_id | BIGINT | 用户ID |
+| course_id | BIGINT | 课程ID |
+| status | VARCHAR(20) | ACTIVE/EXPIRED |
+| expires_at | TIMESTAMP | 权限到期时间 |
+| created_at | TIMESTAMP | 创建时间 |
 
-  chapter Chapter @relation(fields: [chapterId], references: [id])
-}
-
-model Enrollment {
-  id        String            @id @default(uuid())
-  userId    String
-  courseId  String
-  status    EnrollmentStatus  @default(ACTIVE)
-  expiresAt DateTime?         # 课程权限到期时间
-  createdAt DateTime          @default(now())
-
-  user   User   @relation(fields: [userId], references: [id])
-  course Course @relation(fields: [courseId], references: [id])
-}
-
-model RedeemCode {
-  id              String    @id @default(uuid())
-  code            String    @unique
-  courseId        String
-  status          RedeemCodeStatus @default(PENDING)
-  expiresAt       DateTime
-  redeemedBy      String?
-  redeemedAt      DateTime?
-  createdAt       DateTime  @default(now())
-
-  course   Course @relation(fields: [courseId], references: [id])
-  redeemer User?  @relation("RedeemedBy", fields: [redeemedBy], references: [id])
-}
-
-enum RedeemCodeStatus {
-  PENDING
-  REDEEMED
-  EXPIRED
-}
-```
+**redeem_codes**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| code | VARCHAR(20) | 8位兑换码 |
+| course_id | BIGINT | 课程ID |
+| status | VARCHAR(20) | PENDING/REDEEMED/EXPIRED |
+| used_by | BIGINT | 使用者ID |
+| used_at | TIMESTAMP | 使用时间 |
+| expires_at | TIMESTAMP | 兑换码有效期 |
+| course_expires_at | TIMESTAMP | 兑换后课程权限期限 |
+| created_at | TIMESTAMP | 创建时间 |
+>>>>>>> Stashed changes
 
 ---
 
