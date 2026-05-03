@@ -12,7 +12,7 @@
 
 **MVP 目标**: 1个月内上线，验证核心业务流程。
 
-**团队**: 2开发 + 1测试
+像·**团队**: 2开发 + 1测试
 
 ---
 
@@ -48,12 +48,28 @@
 
 ### 2.3 兑换码系统
 
+#### 状态定义
+
+| 状态 | 说明 |
+|------|------|
+| 待兑换 (PENDING) | 生成后等待兑换 |
+| 已兑换 (REDEEMED) | 已被用户使用 |
+| 已失效 (EXPIRED) | 超过有效期未兑换或关联课程被删除 |
+
+#### 状态流转
+
+```
+[生成] → 待兑换 → 已兑换
+              ↘ 已失效
+```
+
+#### 业务规则
+
 | 规则 | 说明 |
 |------|------|
-| 生成方式 | 教育者单个生成 |
+| 生成方式 | 外部系统调用 API 接口生成 |
 | 格式 | 8位字母数字（如 `A1B2C3D4`） |
-| 兑换码有效期 | 教育者自定义（如30天） |
-| 课程权限期限 | 教育者自定义（如兑换后1年） |
+| 兑换码有效期 | 调用方指定（如30天），必须在此之前兑换 |
 | 使用次数 | 一次性，兑换后失效 |
 | 绑定对象 | 绑定到用户账号 |
 
@@ -188,17 +204,23 @@ model Enrollment {
 }
 
 model RedeemCode {
-  id               String    @id @default(uuid())
-  code             String    @unique
-  courseId         String
-  usedBy           String?
-  usedAt           DateTime?
-  expiresAt        DateTime? # 兑换码有效期
-  courseExpiresAt  DateTime? # 兑换后课程权限期限
-  createdAt        DateTime  @default(now())
+  id              String    @id @default(uuid())
+  code            String    @unique
+  courseId        String
+  status          RedeemCodeStatus @default(PENDING)
+  expiresAt       DateTime
+  redeemedBy      String?
+  redeemedAt      DateTime?
+  createdAt       DateTime  @default(now())
 
   course   Course @relation(fields: [courseId], references: [id])
-  redeemer User?  @relation("RedeemedBy", fields: [usedBy], references: [id])
+  redeemer User?  @relation("RedeemedBy", fields: [redeemedBy], references: [id])
+}
+
+enum RedeemCodeStatus {
+  PENDING
+  REDEEMED
+  EXPIRED
 }
 ```
 
@@ -228,14 +250,17 @@ model RedeemCode {
 | GET | `/api/v1/teacher/courses/[id]` | 课程详情 |
 | PUT | `/api/v1/teacher/courses/[id]` | 更新课程 |
 | DELETE | `/api/v1/teacher/courses/[id]` | 删除课程 |
-| GET | `/api/v1/teacher/codes` | 兑换码列表 |
-| POST | `/api/v1/teacher/codes` | 生成兑换码 |
 | POST | `/api/v1/teacher/chapters` | 创建章节 |
 | PUT | `/api/v1/teacher/chapters/[id]` | 更新章节 |
 | DELETE | `/api/v1/teacher/chapters/[id]` | 删除章节 |
 | POST | `/api/v1/teacher/lessons` | 创建课时 |
 | PUT | `/api/v1/teacher/lessons/[id]` | 更新课时 |
 | DELETE | `/api/v1/teacher/lessons/[id]` | 删除课时 |
+
+### 外部系统 API (`/api/v1/redeem-codes/*`)
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/v1/redeem-codes/apply` | 生成兑换码 |
 
 ### 管理员 API (`/api/v1/admin/*`)
 | 方法 | 路径 | 说明 |
