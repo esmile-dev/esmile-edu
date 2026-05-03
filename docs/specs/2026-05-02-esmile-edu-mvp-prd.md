@@ -23,20 +23,28 @@
 | 功能 | 说明 |
 |------|------|
 | 邮箱注册/登录 | 用户通过邮箱和验证码注册和登录 |
+| 角色 | 学生、教师（需审批）、管理员 |
 | 微信登录 | 后期接入（MVP 排除） |
 
 ### 2.2 课程系统
 
-教育者（老师）功能：
+教师功能：
 - 创建课程（标题、描述、封面图）
 - 管理课程状态：草稿 ↔ 已发布
 - 添加章节（支持多个章节）
 - 添加课时（每个课时含视频）
 - 上传视频：平台内上传 → 腾讯云自动转码
+- 生成兑换码
 
 学生功能：
 - 购买/兑换课程
 - 观看视频（已购买的课程）
+
+### 2.3 管理员功能
+
+- 用户管理（审批教师、禁用账号）
+- 课程管理（审核、上下架）
+- 数据统计
 
 ### 2.3 兑换码系统
 
@@ -79,19 +87,30 @@ esmile-edu/
 ├── docs/specs/                       # 需求文档
 ├── frontend/                         # Vue 3 前端
 │   └── src/
-│       ├── student/                  # 学生端视图
-│       ├── educator/                 # 教育者端视图
-│       ├── common/                   # 公共组件
-│       ├── api/                      # API 调用
-│       └── router/                   # 路由
+│       ├── student/                  # 学生端
+│       │   ├── views/
+│       │   ├── components/
+│       │   ├── api/
+│       │   └── router/
+│       ├── teacher/                  # 教师端
+│       │   ├── views/
+│       │   ├── components/
+│       │   ├── api/
+│       │   └── router/
+│       ├── admin/                    # 管理端
+│       │   ├── views/
+│       │   ├── components/
+│       │   ├── api/
+│       │   └── router/
+│       └── common/                   # 公共组件
 ├── backend/                          # Spring Boot 后端
 │   ├── esmile-edu-common/            # 通用模块
 │   ├── esmile-edu-user/              # 用户模块
-│   │   └── api/                      # REST 接口
+│   │   ├── api/student/              # 学生 API
+│   │   ├── api/teacher/              # 教师 API
+│   │   └── api/admin/                # 管理 API
 │   ├── esmile-edu-course/            # 课程模块
-│   │   └── api/                      # REST 接口
 │   ├── esmile-edu-redeem/            # 兑换模块
-│   │   └── api/                      # REST 接口
 │   └── pom.xml
 ```
 
@@ -100,16 +119,18 @@ esmile-edu/
 ## 4. 数据模型
 
 ```prisma
-enum Role { EDUCATOR STUDENT }
+enum Role { STUDENT TEACHER ADMIN }
+enum UserStatus { ACTIVE PENDING_APPROVAL DISABLED }
 enum CourseStatus { DRAFT PUBLISHED }
 enum EnrollmentStatus { ACTIVE EXPIRED }
 
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  nickname  String?
+  nickname  String
   avatar    String?
   role      Role     @default(STUDENT)
+  status    UserStatus @default(ACTIVE)
   createdAt DateTime @default(now())
 
   courses     Course[]
@@ -185,51 +206,53 @@ model RedeemCode {
 
 ## 5. API 设计
 
-### 认证
+### 学生 API (`/api/v1/student/*`)
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/auth/send-code` | 发送邮箱验证码 |
-| POST | `/api/auth/verify-code` | 验证并登录 |
-| GET | `/api/auth/me` | 获取当前用户 |
+| POST | `/api/v1/student/auth/send-code` | 发送邮箱验证码 |
+| POST | `/api/v1/student/auth/verify-code` | 验证并登录 |
+| GET | `/api/v1/student/auth/me` | 获取当前用户 |
+| GET | `/api/v1/student/courses` | 课程列表 |
+| GET | `/api/v1/student/courses/[id]` | 课程详情 |
+| POST | `/api/v1/student/codes/redeem` | 兑换课程 |
+| GET | `/api/v1/student/my-courses` | 我的课程 |
 
-### 课程
+### 教师 API (`/api/v1/teacher/*`)
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/courses` | 课程列表 |
-| POST | `/api/courses` | 创建课程 |
-| GET | `/api/courses/[id]` | 课程详情 |
-| PUT | `/api/courses/[id]` | 更新课程 |
-| PUT | `/api/courses/[id]/publish` | 发布课程 |
-| DELETE | `/api/courses/[id]` | 删除课程 |
+| POST | `/api/v1/teacher/auth/send-code` | 发送邮箱验证码 |
+| POST | `/api/v1/teacher/auth/verify-code` | 验证并登录 |
+| GET | `/api/v1/teacher/auth/me` | 获取当前用户 |
+| GET | `/api/v1/teacher/courses` | 我的课程列表 |
+| POST | `/api/v1/teacher/courses` | 创建课程 |
+| GET | `/api/v1/teacher/courses/[id]` | 课程详情 |
+| PUT | `/api/v1/teacher/courses/[id]` | 更新课程 |
+| DELETE | `/api/v1/teacher/courses/[id]` | 删除课程 |
+| GET | `/api/v1/teacher/codes` | 兑换码列表 |
+| POST | `/api/v1/teacher/codes` | 生成兑换码 |
+| POST | `/api/v1/teacher/chapters` | 创建章节 |
+| PUT | `/api/v1/teacher/chapters/[id]` | 更新章节 |
+| DELETE | `/api/v1/teacher/chapters/[id]` | 删除章节 |
+| POST | `/api/v1/teacher/lessons` | 创建课时 |
+| PUT | `/api/v1/teacher/lessons/[id]` | 更新课时 |
+| DELETE | `/api/v1/teacher/lessons/[id]` | 删除课时 |
 
-### 章节
+### 管理员 API (`/api/v1/admin/*`)
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/courses/[id]/chapters` | 章节列表 |
-| POST | `/api/courses/[id]/chapters` | 创建章节 |
-| PUT | `/api/chapters/[id]` | 更新章节 |
-| DELETE | `/api/chapters/[id]` | 删除章节 |
-
-### 课时
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/chapters/[id]/lessons` | 课时列表 |
-| POST | `/api/chapters/[id]/lessons` | 创建课时 |
-| PUT | `/api/lessons/[id]` | 更新课时 |
-| DELETE | `/api/lessons/[id]` | 删除课时 |
-
-### 兑换码
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/codes` | 兑换码列表 |
-| POST | `/api/codes` | 生成兑换码 |
-| POST | `/api/codes/redeem` | 兑换课程 |
+| POST | `/api/v1/admin/auth/login` | 管理员登录 |
+| GET | `/api/v1/admin/users` | 用户列表 |
+| PUT | `/api/v1/admin/users/[id]/approve` | 审批教师 |
+| PUT | `/api/v1/admin/users/[id]/status` | 修改用户状态 |
+| GET | `/api/v1/admin/courses` | 所有课程 |
+| PUT | `/api/v1/admin/courses/[id]/status` | 修改课程状态 |
+| GET | `/api/v1/admin/stats` | 数据统计 |
 
 ### 视频上传
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/video/apply-upload` | 申请上传 |
-| POST | `/api/video/commit-upload` | 确认上传完成 |
+| GET | `/api/v1/teacher/video/apply-upload` | 申请上传 |
+| POST | `/api/v1/teacher/video/commit-upload` | 确认上传完成 |
 
 ---
 
@@ -239,39 +262,54 @@ model RedeemCode {
 | 路径 | 功能 |
 |------|------|
 | `/` | 首页 |
-| `/login` | 登录 |
-| `/register` | 注册 |
 
-### 教育者端
+### 学生端 (`/student/*`)
 | 路径 | 功能 |
 |------|------|
-| `/educator/dashboard` | 数据概览 |
-| `/educator/courses` | 课程列表 |
-| `/educator/courses/new` | 创建课程 |
-| `/educator/courses/[id]` | 课程详情/编辑 |
-| `/educator/codes` | 兑换码管理 |
-
-### 学生端
-| 路径 | 功能 |
-|------|------|
-| `/student/dashboard` | 学习概览 |
-| `/student/courses` | 我的课程 |
+| `/student/login` | 登录 |
+| `/student/register` | 注册 |
+| `/student/dashboard` | 个人中心 |
+| `/student/courses` | 课程列表 |
 | `/student/courses/[id]` | 课程详情 |
-| `/student/courses/[id]/learn/[lessonId]` | 课时学习 |
-| `/redeem` | 兑换课程 |
+| `/student/my-courses` | 已购课程 |
+| `/student/redeem` | 兑换课程 |
+
+### 教师端 (`/teacher/*`)
+| 路径 | 功能 |
+|------|------|
+| `/teacher/login` | 登录 |
+| `/teacher/register` | 注册（待审批） |
+| `/teacher/dashboard` | 个人中心 |
+| `/teacher/courses` | 我的课程 |
+| `/teacher/courses/new` | 创建课程 |
+| `/teacher/courses/[id]/edit` | 编辑课程 |
+| `/teacher/codes` | 兑换码管理 |
+
+### 管理端 (`/admin/*`)
+| 路径 | 功能 |
+|------|------|
+| `/admin/login` | 管理员登录 |
+| `/admin/dashboard` | 数据概览 |
+| `/admin/users` | 用户管理 |
+| `/admin/users/[id]` | 用户详情/审批 |
+| `/admin/courses` | 课程管理 |
 
 ---
 
 ## 7. 验收标准
 
-- [ ] 用户可通过邮箱+验证码登录/注册
-- [ ] 教育者可创建课程（草稿/发布）
-- [ ] 教育者可添加章节和课时
-- [ ] 教育者可上传视频
-- [ ] 教育者可生成单个兑换码
+- [ ] 学生可通过邮箱+验证码登录/注册
+- [ ] 教师可通过邮箱+验证码注册（需管理员审批）
+- [ ] 管理员可审批教师注册申请
+- [ ] 教师可创建课程（草稿/发布）
+- [ ] 教师可添加章节和课时
+- [ ] 教师可上传视频
+- [ ] 教师可生成兑换码
 - [ ] 学生可输入兑换码兑换课程
 - [ ] 学生可观看已兑换课程的视频
 - [ ] 兑换码一次性使用，兑换后失效
+- [ ] 管理员可管理用户状态
+- [ ] 管理员可查看数据统计
 
 ---
 

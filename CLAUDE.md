@@ -477,25 +477,29 @@ user 模块  ←→  事件/API  ←→  course 模块
 
 ## 5. 前端规范 (Vue 3)
 
-### 4.1 项目结构
+### 5.1 项目结构
 
 ```
-src/frontend/src/
-├── student/                # 学生端视图
+frontend/src/
+├── student/                # 学生端
 │   ├── views/
 │   ├── components/
+│   ├── api/
 │   └── router/
-├── educator/               # 教育者端视图
+├── teacher/               # 教师端
 │   ├── views/
 │   ├── components/
+│   ├── api/
 │   └── router/
-├── common/                 # 公共组件
-├── api/                    # API 调用层
-├── assets/                 # 静态资源
-└── router/                 # 路由配置
+├── admin/                 # 管理端
+│   ├── views/
+│   ├── components/
+│   ├── api/
+│   └── router/
+└── common/               # 公共组件
 ```
 
-### 4.2 shadcn/ui 使用规范
+### 5.2 shadcn/ui 使用规范
 
 - 组件存放于 `@/common/components/ui/`
 - 使用 `cn()` 工具类合并 class
@@ -547,10 +551,9 @@ esmile-edu/
 ├── frontend/               # Vue 3 前端
 │   └── src/
 │       ├── student/        # 学生端
-│       ├── educator/       # 教育者端
-│       ├── common/         # 公共组件
-│       ├── api/            # API 调用
-│       └── router/         # 路由
+│       ├── teacher/        # 教师端
+│       ├── admin/          # 管理端
+│       └── common/         # 公共组件
 ├── backend/                # Spring Boot 后端
 │   ├── esmile-edu-common/
 │   ├── esmile-edu-user/
