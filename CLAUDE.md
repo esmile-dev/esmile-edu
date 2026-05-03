@@ -256,6 +256,181 @@ public record UserResponse(Long id, String email, String nickname, Role role) {}
 
 ---
 
+### 3.8 DDD 设计原则
+
+#### 3.8.1 依赖规则
+
+**核心原则**: 源代码依赖只能指向内部层级，外层不知道内层存在。
+
+```
+        ┌─────────────────────────┐
+        │   API (Controllers)    │  ← 依赖 Application
+        └────────────┬────────────┘
+                     │
+        ┌────────────▼────────────┐
+        │      Application        │  ← 依赖 Domain
+        │    (Use Cases/Services) │
+        └────────────┬────────────┘
+                     │
+        ┌────────────▼────────────┐
+        │        Domain           │  ← 无依赖（核心）
+        │  (Entities, Value Objs) │
+        └─────────────────────────┘
+
+        Infrastructure (Adapters) ──► Domain Ports (接口)
+        （外层，可依赖内层，内层无感知）
+```
+
+**强制规则**:
+- Domain 层不得导入任何 Spring、Jakarta、Infrastructure 包的类
+- Repository 接口定义在 Domain 层，实现在 Infrastructure 层
+- Application 层协调领域对象，不包含业务逻辑
+
+#### 3.8.2 端口与适配器
+
+**端口类型**:
+- **Driving Port（主端口）**: 用例接口，定义在 Application 层
+- **Driven Port（从端口）**: 基础设施接口，定义在 Domain 层
+
+```java
+// Domain 层 - Driven Port（基础设施接口）
+public interface RedeemCodeRepository {
+    RedeemCode findByCode(String code);
+    void save(RedeemCode redeemCode);
+}
+
+// Infrastructure 层 - Adapter（实现）
+@Repository
+public class JpaRedeemCodeRepository implements RedeemCodeRepository {
+    // JPA implementation
+}
+
+// Application 层 - Driving Port（用例接口）
+public interface GenerateRedeemCodeUseCase {
+    RedeemCode generate(Long courseId, LocalDateTime expiresAt);
+}
+```
+
+**适配器注册**: 通过 Spring `@Configuration` 或 `@Primary` 进行绑定
+
+#### 3.8.3 防腐层（ACL）
+
+**设计原则**: 防腐层用于隔离外部系统概念与领域概念，仅在语义冲突时使用。
+
+**触发条件**（满足任一条件）:
+1. 外部 API 语义与领域概念严重不匹配
+2. 外部 API 即将变更，需要隔离影响
+3. 需要将多个外部调用组合为单一领域操作
+
+**不必要场景**:
+- 简单的一对一映射（如 UserRepository.findById）
+- 稳定的外部 API（如腾讯云 VOD SDK）
+
+```java
+// ACL 示例：外部模型 → 领域对象
+@Service
+public class TencentVodAcl {
+    public Video toDomain(TencentVodResponse response) {
+        return new Video(
+            VideoId.from(response.getFileId()),
+            new VideoUrl(response.getUrl()),
+            Duration.ofSeconds(response.getDuration())
+        );
+    }
+}
+```
+
+#### 3.8.4 聚合边界
+
+**规则**: 聚合是领域对象的一致性边界。聚合内对象共同维护业务不变式，跨聚合引用使用 ID。
+
+```java
+// 聚合根示例
+@Entity
+@Table(name = "courses")
+public class Course extends BaseEntity {
+    @Id
+    private Long id;
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
+    private List<Chapter> chapters;
+
+    // 聚合根控制其内部对象
+    public void addChapter(Chapter chapter) {
+        chapters.add(chapter);
+        chapter.setCourse(this);
+    }
+}
+
+// 跨聚合引用 - 使用 ID 而非对象引用
+@Entity
+@Table(name = "enrollments")
+public class Enrollment extends BaseEntity {
+    @Column(name = "user_id")
+    private Long userId;  // ← 使用 ID，引用 User 聚合
+
+    @Column(name = "course_id")
+    private Long courseId;  // ← 使用 ID，引用 Course 聚合
+}
+```
+
+#### 3.8.5 领域事件
+
+**规则**: 领域事件表示发生在领域中的事实，用于跨聚合或跨模块通信。
+
+```java
+// 领域事件 - 定义在 Domain 层
+public record RedeemCodeGeneratedEvent(
+    RedeemCodeId redeemCodeId,
+    CourseId courseId,
+    UserId redeemerId
+) {}
+
+// Application 层 - 发布事件
+@Service
+public class RedeemApplicationService {
+    public void redeem(String code) {
+        // ... 业务逻辑
+        eventPublisher.publish(new RedeemCodeGeneratedEvent(...));
+    }
+}
+```
+
+#### 3.8.6 值对象
+
+**规则**: 值对象不可变，按值比较，用于描述领域的无标识概念。
+
+```java
+// 值对象示例
+public record Email(String value) {
+    public Email {
+        if (value == null || !value.contains("@")) {
+            throw new IllegalArgumentException("Invalid email");
+        }
+    }
+}
+
+// 在实体中使用 @Embedded
+@Embeddable
+public class EmailAttribute {
+    @Column(name = "email")
+    private String value;
+}
+```
+
+#### 3.8.7 限界上下文边界
+
+**规则**: 每个模块（user、course、redeem）是独立的限界上下文。跨上下文通信通过事件或 API，不得直接引用其他上下文的实体。
+
+```
+user 模块  ←→  事件/API  ←→  course 模块
+   ↓                              ↓
+ User 实体                   Course 实体
+（独立）                    （独立）
+```
+
+---
+
 ## 4. 前端规范 (Vue 3)
 
 ### 4.1 项目结构
