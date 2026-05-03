@@ -14,7 +14,48 @@
 
 ---
 
-## 2. Git 工作流
+## 2. Rules
+
+### 2.1 What NOT to Do
+
+- ❌ 禁止 `git add -A` 或 `git add .`（必须先确认文件列表）
+- ❌ 禁止提交敏感文件（`.claude/`、`toolkit/`、`node_modules/`、`.env`）
+- ❌ 禁止 `git push --force` 到 main/master 分支
+- ❌ 禁止硬编码凭据、密钥到源代码
+- ❌ 禁止提交生成的临时文件
+
+### 2.2 Code Style
+
+**通用规则**:
+- 使用有明确含义的变量名，避免缩写
+- 禁止魔法数字，使用命名常量
+- 函数不超过 ~40 行，超出则拆分
+- 删除死代码，不要注释掉
+
+**Java**:
+- 使用 Lombok 减少样板代码
+- 优先使用 immutable 对象（final 字段、record）
+- Stream API over 循环
+
+**TypeScript/Vue**:
+- `const` over `let`，禁止 `var`
+- 箭头函数用于回调
+- Async/await over `.then()` 链
+
+### 2.3 Testing
+
+**规则**:
+- 每个 bug 修复需要测试用例
+- 测试行为而非实现细节
+- 测试名称描述场景：`it('returns null when user not found')`
+
+**测试文件位置**:
+- 单元测试放在源码旁边：`UserService.java` → `UserServiceTest.java`
+- 集成测试在 `tests/integration/`
+
+---
+
+## 3. Git 工作流
 
 ### 分支策略
 
@@ -49,26 +90,16 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 1. **开始工作前**: 使用 `using-git-worktrees` skill 创建隔离工作区
 2. **创建功能分支**: 从 dev 创建 `feature/xxx` 或 `fix/xxx`
 
-### Git 安全规则
+### 安全检查清单
 
-**禁止行为**:
-- ❌ 禁止 `git add -A` 或 `git add .`（必须先确认文件列表）
-- ❌ 禁止提交 `.claude/`、`toolkit/`、`node_modules/`、`.env` 等本地/敏感文件
-- ❌ 禁止 `git push --force` 到 main/master 分支
-
-**安全检查清单**:
 执行 `git add` 前必须：
 1. 先执行 `git status --short` 查看变更文件
 2. 确认没有敏感文件（.claude/、.env、凭据等）
 3. 使用 `git add <specific-files>` 而非全量 add
-3. **开发中**: 使用 TDD 方法，参考 `superpowers:test-driven-development`
-4. **每个任务完成后**: 使用 `requesting-code-review` skill 进行代码审查
-5. **合并到 dev**: 代码审查通过后，合并到 dev 分支
-6. **发布时**: 将 dev 合并到 main
 
 ---
 
-## 3. 后端规范 (Spring Boot 3.x)
+## 4. 后端规范 (Spring Boot 3.x)
 
 ### 3.1 技术版本
 
@@ -444,7 +475,7 @@ user 模块  ←→  事件/API  ←→  course 模块
 
 ---
 
-## 4. 前端规范 (Vue 3)
+## 5. 前端规范 (Vue 3)
 
 ### 4.1 项目结构
 
@@ -472,7 +503,7 @@ src/frontend/src/
 
 ---
 
-## 5. 开发流程
+## 6. 开发流程
 
 ### 5.1 标准流程
 
@@ -506,7 +537,7 @@ src/frontend/src/
 
 ---
 
-## 6. 目录结构
+## 7. 目录结构
 
 ```
 esmile-edu/
@@ -530,7 +561,7 @@ esmile-edu/
 
 ---
 
-## 7. 环境配置
+## 8. 环境配置
 
 ### 必需环境变量
 
@@ -550,7 +581,7 @@ VITE_API_BASE_URL=           # API 基础路径
 
 ---
 
-## 8. 质量标准
+## 9. 质量标准
 
 - 测试覆盖率 > 80%
 - 所有 Critical/Important 问题必须在合并前修复
@@ -558,7 +589,7 @@ VITE_API_BASE_URL=           # API 基础路径
 
 ---
 
-## 9. 参考 Skills
+## 10. 参考 Skills
 
 - `superpowers:using-git-worktrees` - 创建隔离工作区
 - `superpowers:finishing-a-development-branch` - 结束开发分支
