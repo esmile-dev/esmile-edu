@@ -5,7 +5,7 @@
 ## 技术栈
 
 - **前端**: Vue 3 + Vite
-- **后端**: Spring Boot 3.x (Java 17+)
+- **后端**: Spring Boot 3.x (Java 25)
 - **数据库**: PostgreSQL + Spring Data JPA
 - **视频托管**: 腾讯云 VOD
 

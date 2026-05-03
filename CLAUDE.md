@@ -8,7 +8,7 @@
 
 **技术栈**:
 - 前端：Vue 3 + Vite + shadcn/ui
-- 后端：Spring Boot 3.x (Java 17+) + Spring Data JPA
+- 后端：Spring Boot 3.x (Java 25) + Spring Data JPA
 - 数据库：PostgreSQL
 - 视频托管：腾讯云 VOD
 
@@ -18,9 +18,21 @@
 
 ### 分支策略
 
-- `main` - 主分支，稳定可部署
-- `feature/*` - 功能分支
-- `fix/*` - 修复分支
+```
+main        → 主分支，稳定可部署
+dev         → 开发分支，所有功能先合入 dev
+feature/*   → 功能分支（从 dev 创建）
+fix/*       → 修复分支（从 dev 创建）
+```
+
+### 分支流程
+
+```
+feature/xxx → dev → main
+fix/xxx     → dev → main
+```
+
+**注意**: 禁止直接从 feature/fix 分支合并到 main，必须经过 dev
 
 ### 提交规范
 
@@ -35,9 +47,11 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 ### 工作流程
 
 1. **开始工作前**: 使用 `using-git-worktrees` skill 创建隔离工作区
-2. **开发中**: 使用 TDD 方法，参考 `superpowers:test-driven-development`
-3. **每个任务完成后**: 使用 `requesting-code-review` skill 进行代码审查
-4. **任务完成时**: 使用 `finishing-a-development-branch` skill 结束分支
+2. **创建功能分支**: 从 dev 创建 `feature/xxx` 或 `fix/xxx`
+3. **开发中**: 使用 TDD 方法，参考 `superpowers:test-driven-development`
+4. **每个任务完成后**: 使用 `requesting-code-review` skill 进行代码审查
+5. **合并到 dev**: 代码审查通过后，合并到 dev 分支
+6. **发布时**: 将 dev 合并到 main
 
 ---
 
@@ -47,7 +61,7 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 
 | 组件 | 版本 |
 |------|------|
-| Java | 17 LTS+ |
+| Java | 25 LTS |
 | Spring Boot | 3.3.x |
 | PostgreSQL | 15+ |
 | JPA/Hibernate | 6.x |
@@ -68,24 +82,26 @@ src/backend/
 │       └── util/                   # 工具类
 ├── esmile-edu-user/                # 用户模块
 │   └── com/esmile/edu/user/
-│       ├── domain/                 # 领域层
-│       │   ├── model/              # 实体、值对象
-│       │   ├── repository/         # 仓储接口
-│       │   └── service/            # 领域服务
-│       ├── application/            # 应用层
-│       │   ├── dto/               # 数据传输对象
-│       │   ├── service/            # 应用服务
-│       │   └── port/               # 端口接口
-│       ├── infrastructure/         # 基础设施层
-│       │   └── persistence/        # 持久化适配器
-│       ├── api/                    # 用户端 REST 接口
-│       └── admin/                  # 管理端 REST 接口
+│       ├── domain/                # 领域层
+│       │   ├── model/             # 实体、值对象
+│       │   ├── repository/        # 仓储接口
+│       │   └── service/           # 领域服务
+│       ├── application/           # 应用层
+│       │   ├── dto/              # 数据传输对象
+│       │   ├── service/          # 应用服务
+│       │   └── port/             # 端口接口
+│       ├── infrastructure/        # 基础设施层
+│       │   └── persistence/       # 持久化适配器
+│       └── api/                   # REST 接口（含用户端、管理端）
+│           ├── UserController     # 用户端
+│           └── AdminController   # 管理端
 ├── esmile-edu-course/              # 课程模块
 └── esmile-edu-redeem/              # 兑换码模块
 ```
 
 **包名规范**:
 - 使用 `module.user` 而非 `module-user`（Java 包名禁止使用连字符）
+- 所有 REST 控制器放在 `api` 包下，按端点类型拆分为 `XxxController` 和 `XxxAdminController`
 
 ---
 
@@ -225,6 +241,8 @@ public record UserResponse(Long id, String email, String nickname, Role role) {}
 - 嵌套资源: `/api/v1/courses/{courseId}/chapters`
 - 不使用动词: `/api/v1/users` 而非 `/api/v1/getUsers`
 
+**管理端 API 前缀**: `/api/v1/admin/xxx`
+
 **HTTP 方法**:
 | 方法 | 用途 | 响应码 |
 |------|------|--------|
@@ -268,14 +286,32 @@ src/frontend/src/
 
 ## 5. 开发流程
 
-### PRD → 设计 → 实现
+### 5.1 标准流程
 
-1. 需求写入 `docs/specs/`
-2. 设计文档评审通过后，使用 `brainstorming` skill 细化设计
-3. 使用 `writing-plans` skill 创建实施计划
-4. 使用 `subagent-driven-development` skill 执行计划
+```
+1. 需求分析
+   └── PRD 写入 docs/specs/
 
-### 代码审查
+2. 设计阶段
+   ├── 使用 brainstorming skill 细化设计
+   └── 设计文档写入 docs/superpowers/specs/
+
+3. 实施计划
+   ├── 使用 writing-plans skill 创建计划
+   └── 任务分解后开始开发
+
+4. 开发阶段
+   ├── 从 dev 创建 feature/xxx 分支
+   ├── 使用 TDD 开发（superpowers:test-driven-development）
+   ├── 使用 requesting-code-review 进行代码审查
+   └── 审查通过后合并到 dev
+
+5. 发布阶段
+   ├── 将 dev 合并到 main
+   └── 打 tag 发布
+```
+
+### 5.2 代码审查
 
 - 每个任务完成后必须审查
 - 审查结果：Critical → 立即修复，Important → 修复后继续，Minor → 记录
@@ -286,21 +322,23 @@ src/frontend/src/
 
 ```
 esmile-edu/
-├── docs/specs/              # 需求和设计文档
+├── docs/
+│   ├── specs/              # PRD 和设计文档
+│   └── superpowers/specs/  # 技能文档
 ├── src/
-│   ├── frontend/             # Vue 3 前端
+│   ├── frontend/          # Vue 3 前端
 │   │   └── src/
-│   │       ├── student/      # 学生端
-│   │       ├── educator/     # 教育者端
-│   │       ├── common/       # 公共组件
-│   │       ├── api/          # API 调用
-│   │       └── router/       # 路由
-│   └── backend/              # Spring Boot 后端
+│   │       ├── student/    # 学生端
+│   │       ├── educator/   # 教育者端
+│   │       ├── common/    # 公共组件
+│   │       ├── api/       # API 调用
+│   │       └── router/    # 路由
+│   └── backend/           # Spring Boot 后端
 │       ├── esmile-edu-common/
 │       ├── esmile-edu-user/
 │       ├── esmile-edu-course/
 │       └── esmile-edu-redeem/
-└── .worktrees/               # 工作树目录（已忽略）
+└── .worktrees/            # 工作树目录（已忽略）
 ```
 
 ---

@@ -1,6 +1,6 @@
 # esmile 教育平台 - MVP PRD
 
-**日期**: 2026-05-02
+**日期**: 2026-05-03
 **状态**: 需求澄清完成
 **版本**: v1.0
 
@@ -65,8 +65,7 @@
 
 | 层级 | 技术 | 备注 |
 |------|------|------|
-| 前端 | Vue 3 + Vite | React 框架 |
-| 后端 | Spring Boot 3.x | Java 17+ |
+| 后端 | Spring Boot 3.x | Java 25 |
 | 数据库 | PostgreSQL | 自建在 47.107.163.188 |
 | ORM | Spring Data JPA | 数据库操作 |
 | CSS | Tailwind CSS | 样式 |
@@ -77,7 +76,6 @@
 
 ```
 esmile-edu/
-├── prisma/schema.prisma              # 数据库模型
 ├── docs/specs/                       # 需求文档
 ├── src/
 │   ├── frontend/                     # Vue 3 前端
@@ -90,14 +88,11 @@ esmile-edu/
 │   └── backend/                      # Spring Boot 后端
 │       ├── esmile-edu-common/        # 通用模块
 │       ├── esmile-edu-user/          # 用户模块
-│       │   ├── user-api/             #   用户面
-│       │   └── user-admin/          #   管理面
-│       ├── esmile-edu-course/       # 课程模块
-│       │   ├── course-api/          #   课程面
-│       │   └── course-admin/        #   管理面
-│       ├── esmile-edu-redeem/       # 兑换模块
-│       │   ├── redeem-api/          #   兑换面
-│       │   └── redeem-admin/        #   管理面
+│       │   └── api/                  # REST 接口（用户端+管理端）
+│       ├── esmile-edu-course/        # 课程模块
+│       │   └── api/                  # REST 接口（用户端+管理端）
+│       ├── esmile-edu-redeem/        # 兑换模块
+│       │   └── api/                  # REST 接口（用户端+管理端）
 │       └── pom.xml
 ```
 
