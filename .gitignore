@@ -27,4 +27,7 @@ Thumbs.db
 npm-debug.log*
 
 # Local configs
-.claude/toolkit/
+.claude/
+
+# Toolkit (personal tools)
+toolkit/
