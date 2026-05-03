@@ -77,23 +77,22 @@
 ```
 esmile-edu/
 ├── docs/specs/                       # 需求文档
-├── src/
-│   ├── frontend/                     # Vue 3 前端
-│   │   └── src/
-│   │       ├── student/              # 学生端视图
-│   │       ├── educator/             # 教育者端视图
-│   │       ├── common/               # 公共组件
-│   │       ├── api/                  # API 调用
-│   │       └── router/               # 路由
-│   └── backend/                      # Spring Boot 后端
-│       ├── esmile-edu-common/        # 通用模块
-│       ├── esmile-edu-user/          # 用户模块
-│       │   └── api/                  # REST 接口（用户端+管理端）
-│       ├── esmile-edu-course/        # 课程模块
-│       │   └── api/                  # REST 接口（用户端+管理端）
-│       ├── esmile-edu-redeem/        # 兑换模块
-│       │   └── api/                  # REST 接口（用户端+管理端）
-│       └── pom.xml
+├── frontend/                         # Vue 3 前端
+│   └── src/
+│       ├── student/                  # 学生端视图
+│       ├── educator/                 # 教育者端视图
+│       ├── common/                   # 公共组件
+│       ├── api/                      # API 调用
+│       └── router/                   # 路由
+├── backend/                          # Spring Boot 后端
+│   ├── esmile-edu-common/            # 通用模块
+│   ├── esmile-edu-user/              # 用户模块
+│   │   └── api/                      # REST 接口
+│   ├── esmile-edu-course/            # 课程模块
+│   │   └── api/                      # REST 接口
+│   ├── esmile-edu-redeem/            # 兑换模块
+│   │   └── api/                      # REST 接口
+│   └── pom.xml
 ```
 
 ---

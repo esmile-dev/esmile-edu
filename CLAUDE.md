@@ -325,19 +325,18 @@ esmile-edu/
 ├── docs/
 │   ├── specs/              # PRD 和设计文档
 │   └── superpowers/specs/  # 技能文档
-├── src/
-│   ├── frontend/          # Vue 3 前端
-│   │   └── src/
-│   │       ├── student/    # 学生端
-│   │       ├── educator/   # 教育者端
-│   │       ├── common/    # 公共组件
-│   │       ├── api/       # API 调用
-│   │       └── router/    # 路由
-│   └── backend/           # Spring Boot 后端
-│       ├── esmile-edu-common/
-│       ├── esmile-edu-user/
-│       ├── esmile-edu-course/
-│       └── esmile-edu-redeem/
+├── frontend/               # Vue 3 前端
+│   └── src/
+│       ├── student/        # 学生端
+│       ├── educator/       # 教育者端
+│       ├── common/         # 公共组件
+│       ├── api/            # API 调用
+│       └── router/         # 路由
+├── backend/                # Spring Boot 后端
+│   ├── esmile-edu-common/
+│   ├── esmile-edu-user/
+│   ├── esmile-edu-course/
+│   └── esmile-edu-redeem/
 └── .worktrees/            # 工作树目录（已忽略）
 ```
 
