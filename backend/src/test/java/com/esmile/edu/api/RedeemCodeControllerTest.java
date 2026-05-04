@@ -1,12 +1,14 @@
 package com.esmile.edu.api;
 
 import com.esmile.edu.common.auth.VerificationCodeService;
+import com.esmile.edu.module.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -21,6 +23,9 @@ class RedeemCodeControllerTest {
     @Autowired
     private VerificationCodeService verificationCodeService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     void generateAndRedeemCode() throws Exception {
         String teacherEmail = "teacher_redeem_" + System.currentTimeMillis() + "@test.com";
@@ -33,10 +38,19 @@ class RedeemCodeControllerTest {
             .andExpect(status().isOk());
 
         String teacherCode = verificationCodeService.getStoredCode(teacherEmail);
-        mockMvc.perform(post("/api/v1/teacher/auth/verify-code")
+        MvcResult teacherResult = mockMvc.perform(post("/api/v1/teacher/auth/verify-code")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\": \"" + teacherEmail + "\", \"code\": \"" + teacherCode + "\"}"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String teacherToken = com.jayway.jsonpath.JsonPath.read(teacherResult.getResponse().getContentAsString(), "$.data.token");
+
+        // 教师创建后是PENDING_APPROVAL状态，需要设为ACTIVE才能创建课程
+        userRepository.findByEmail(teacherEmail).ifPresent(user -> {
+            user.setStatus(com.esmile.edu.module.user.UserStatus.ACTIVE);
+            userRepository.saveAndFlush(user);
+        });
 
         // Create a course
         String courseJson = """
@@ -47,14 +61,14 @@ class RedeemCodeControllerTest {
             }
             """;
         mockMvc.perform(post("/api/v1/teacher/courses")
-                .header("X-User-Id", "1")
+                .header("Authorization", "Bearer " + teacherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(courseJson))
             .andExpect(status().isOk());
 
         // Publish course
         mockMvc.perform(put("/api/v1/teacher/courses/1/publish")
-                .header("X-User-Id", "1"))
+                .header("Authorization", "Bearer " + teacherToken))
             .andExpect(status().isOk());
 
         // Generate redeem codes
@@ -67,7 +81,7 @@ class RedeemCodeControllerTest {
             """;
 
         mockMvc.perform(post("/api/v1/teacher/redeem-codes/generate")
-                .header("X-User-Id", "1")
+                .header("Authorization", "Bearer " + teacherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(generateJson))
             .andExpect(status().isOk())
@@ -90,14 +104,32 @@ class RedeemCodeControllerTest {
 
     @Test
     void redeemWithInvalidCode() throws Exception {
+        // 创建学生用户
+        String studentEmail = "student_redeem_invalid_" + System.currentTimeMillis() + "@test.com";
+
+        mockMvc.perform(post("/api/v1/student/auth/send-code")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"" + studentEmail + "\"}"))
+            .andExpect(status().isOk());
+
+        String studentCode = verificationCodeService.getStoredCode(studentEmail);
+        MvcResult studentResult = mockMvc.perform(post("/api/v1/student/auth/verify-code")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"" + studentEmail + "\", \"code\": \"" + studentCode + "\"}"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String studentToken = com.jayway.jsonpath.JsonPath.read(studentResult.getResponse().getContentAsString(), "$.data.token");
+
         String json = """
             {
                 "code": "INVALID"
             }
             """;
 
+        // 学生用户创建后是ACTIVE状态，可以直接调用需要登录的接口
         mockMvc.perform(post("/api/v1/student/redeem")
-                .header("X-User-Id", "1")
+                .header("Authorization", "Bearer " + studentToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
             .andExpect(status().isNotFound())

@@ -2,10 +2,13 @@ package com.esmile.edu.api.video;
 
 import com.esmile.edu.biz.VideoService;
 import com.esmile.edu.common.ApiResponse;
+import com.esmile.edu.common.auth.AuthContext;
+import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.CommitUploadRequest;
 import com.esmile.edu.dto.response.LessonResponse;
 import com.esmile.edu.dto.response.VideoUploadSignature;
 import com.esmile.edu.module.course.LessonEntity;
+import com.esmile.edu.module.user.Role;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,11 +26,11 @@ public class VideoController {
      * GET /teacher/video/apply-upload?fileName=xxx&fileSize=123456
      */
     @GetMapping("/apply-upload")
+    @RequireRole(Role.TEACHER)
     public ApiResponse<VideoUploadSignature> applyUpload(
             @RequestParam String fileName,
-            @RequestParam long fileSize,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        return ApiResponse.ok(videoService.applyUpload(educatorId, fileName, fileSize));
+            @RequestParam long fileSize) {
+        return ApiResponse.ok(videoService.applyUpload(AuthContext.getCurrentUserId(), fileName, fileSize));
     }
 
     /**
@@ -35,12 +38,11 @@ public class VideoController {
      * POST /teacher/video/commit-upload
      */
     @PostMapping("/commit-upload")
-    public ApiResponse<LessonResponse> commitUpload(
-            @Valid @RequestBody CommitUploadRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<LessonResponse> commitUpload(@Valid @RequestBody CommitUploadRequest request) {
         LessonEntity lesson = videoService.confirmUpload(
             request.lessonId(),
-            educatorId,
+            AuthContext.getCurrentUserId(),
             request.videoId()
         );
         return ApiResponse.ok(LessonResponse.from(lesson));

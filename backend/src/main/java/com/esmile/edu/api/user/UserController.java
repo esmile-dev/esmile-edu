@@ -2,6 +2,9 @@ package com.esmile.edu.api.user;
 
 import com.esmile.edu.biz.UserBizService;
 import com.esmile.edu.common.ApiResponse;
+import com.esmile.edu.common.auth.AuthContext;
+import com.esmile.edu.common.auth.RequireAuth;
+import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.SendCodeRequest;
 import com.esmile.edu.dto.request.VerifyCodeRequest;
 import com.esmile.edu.dto.response.AuthResponse;
@@ -36,8 +39,9 @@ public class UserController {
     }
 
     @GetMapping("/student/auth/me")
-    public ApiResponse<UserResponse> getCurrentStudent(@RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
-        return ApiResponse.ok(userBizService.findById(userId));
+    @RequireAuth
+    public ApiResponse<UserResponse> getCurrentStudent() {
+        return ApiResponse.ok(userBizService.findById(AuthContext.getCurrentUserId()));
     }
 
     // 教师认证 - 发送验证码
@@ -54,12 +58,14 @@ public class UserController {
     }
 
     @GetMapping("/teacher/auth/me")
-    public ApiResponse<UserResponse> getCurrentTeacher(@RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
-        return ApiResponse.ok(userBizService.findById(userId));
+    @RequireAuth
+    public ApiResponse<UserResponse> getCurrentTeacher() {
+        return ApiResponse.ok(userBizService.findById(AuthContext.getCurrentUserId()));
     }
 
     // 管理员接口
     @GetMapping("/admin/users")
+    @RequireRole(Role.ADMIN)
     public ApiResponse<Page<UserResponse>> listUsers(
             @RequestParam(required = false) Role role,
             @RequestParam(required = false) UserStatus status,
@@ -68,12 +74,14 @@ public class UserController {
     }
 
     @PutMapping("/admin/users/{id}/approve")
+    @RequireRole(Role.ADMIN)
     public ApiResponse<Void> approveTeacher(@PathVariable Long id) {
         userBizService.approveTeacher(id);
         return ApiResponse.ok(null);
     }
 
     @PutMapping("/admin/users/{id}/status")
+    @RequireRole(Role.ADMIN)
     public ApiResponse<Void> updateUserStatus(
             @PathVariable Long id,
             @RequestParam UserStatus status,

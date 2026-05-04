@@ -2,6 +2,9 @@ package com.esmile.edu.api.course;
 
 import com.esmile.edu.biz.CourseBizService;
 import com.esmile.edu.common.ApiResponse;
+import com.esmile.edu.common.auth.AuthContext;
+import com.esmile.edu.common.auth.RequireAuth;
+import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.CreateChapterRequest;
 import com.esmile.edu.dto.request.CreateCourseRequest;
 import com.esmile.edu.dto.request.CreateLessonRequest;
@@ -12,6 +15,7 @@ import com.esmile.edu.dto.response.ChapterResponse;
 import com.esmile.edu.dto.response.CourseDetailResponse;
 import com.esmile.edu.dto.response.CourseResponse;
 import com.esmile.edu.dto.response.LessonResponse;
+import com.esmile.edu.module.user.Role;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,39 +34,35 @@ public class CourseController {
 
     // 课程管理
     @PostMapping("/teacher/courses")
-    public ApiResponse<CourseResponse> createCourse(
-            @Valid @RequestBody CreateCourseRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        return ApiResponse.created(courseBizService.createCourse(request, educatorId));
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<CourseResponse> createCourse(@Valid @RequestBody CreateCourseRequest request) {
+        return ApiResponse.created(courseBizService.createCourse(request, AuthContext.getCurrentUserId()));
     }
 
     @PutMapping("/teacher/courses/{id}/publish")
-    public ApiResponse<CourseResponse> publishCourse(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        return ApiResponse.ok(courseBizService.publishCourse(id, educatorId));
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<CourseResponse> publishCourse(@PathVariable Long id) {
+        return ApiResponse.ok(courseBizService.publishCourse(id, AuthContext.getCurrentUserId()));
     }
 
     @GetMapping("/teacher/courses/{id}")
-    public ApiResponse<CourseResponse> getCourseById(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        return ApiResponse.ok(courseBizService.getCourseById(id, educatorId));
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<CourseResponse> getCourseById(@PathVariable Long id) {
+        return ApiResponse.ok(courseBizService.getCourseById(id, AuthContext.getCurrentUserId()));
     }
 
     @PutMapping("/teacher/courses/{id}")
+    @RequireRole(Role.TEACHER)
     public ApiResponse<CourseResponse> updateCourse(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateCourseRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        return ApiResponse.ok(courseBizService.updateCourse(id, educatorId, request));
+            @Valid @RequestBody UpdateCourseRequest request) {
+        return ApiResponse.ok(courseBizService.updateCourse(id, AuthContext.getCurrentUserId(), request));
     }
 
     @DeleteMapping("/teacher/courses/{id}")
-    public ApiResponse<Void> deleteCourse(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        courseBizService.deleteCourse(id, educatorId);
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<Void> deleteCourse(@PathVariable Long id) {
+        courseBizService.deleteCourse(id, AuthContext.getCurrentUserId());
         return ApiResponse.ok(null);
     }
 
@@ -79,69 +79,65 @@ public class CourseController {
 
     // 章节管理
     @PostMapping("/teacher/chapters")
-    public ApiResponse<ChapterResponse> createChapter(
-            @Valid @RequestBody CreateChapterRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<ChapterResponse> createChapter(@Valid @RequestBody CreateChapterRequest request) {
         return ApiResponse.created(courseBizService.createChapter(request));
     }
 
     @PutMapping("/teacher/chapters/{id}")
+    @RequireRole(Role.TEACHER)
     public ApiResponse<ChapterResponse> updateChapter(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateChapterRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        return ApiResponse.ok(courseBizService.updateChapter(id, educatorId, request));
+            @Valid @RequestBody UpdateChapterRequest request) {
+        return ApiResponse.ok(courseBizService.updateChapter(id, AuthContext.getCurrentUserId(), request));
     }
 
     @DeleteMapping("/teacher/chapters/{id}")
-    public ApiResponse<Void> deleteChapter(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        courseBizService.deleteChapter(id, educatorId);
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<Void> deleteChapter(@PathVariable Long id) {
+        courseBizService.deleteChapter(id, AuthContext.getCurrentUserId());
         return ApiResponse.ok(null);
     }
 
     // 课时管理
     @PostMapping("/teacher/lessons")
+    @RequireRole(Role.TEACHER)
     public ApiResponse<LessonResponse> createLesson(@Valid @RequestBody CreateLessonRequest request) {
         return ApiResponse.created(courseBizService.createLesson(request));
     }
 
     @PutMapping("/teacher/lessons/{id}")
+    @RequireRole(Role.TEACHER)
     public ApiResponse<LessonResponse> updateLesson(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateLessonRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        return ApiResponse.ok(courseBizService.updateLesson(id, educatorId, request));
+            @Valid @RequestBody UpdateLessonRequest request) {
+        return ApiResponse.ok(courseBizService.updateLesson(id, AuthContext.getCurrentUserId(), request));
     }
 
     @DeleteMapping("/teacher/lessons/{id}")
-    public ApiResponse<Void> deleteLesson(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId) {
-        courseBizService.deleteLesson(id, educatorId);
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<Void> deleteLesson(@PathVariable Long id) {
+        courseBizService.deleteLesson(id, AuthContext.getCurrentUserId());
         return ApiResponse.ok(null);
     }
 
     // 选课
     @PostMapping("/student/courses/{id}/enroll")
-    public ApiResponse<Void> enrollCourse(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
-        courseBizService.enrollCourse(userId, id);
+    @RequireAuth
+    public ApiResponse<Void> enrollCourse(@PathVariable Long id) {
+        courseBizService.enrollCourse(AuthContext.getCurrentUserId(), id);
         return ApiResponse.created(null);
     }
 
     @GetMapping("/student/my-courses")
-    public ApiResponse<List<CourseResponse>> myCourses(
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
-        return ApiResponse.ok(courseBizService.listEnrolledCourses(userId));
+    @RequireAuth
+    public ApiResponse<List<CourseResponse>> myCourses() {
+        return ApiResponse.ok(courseBizService.listEnrolledCourses(AuthContext.getCurrentUserId()));
     }
 
     @GetMapping("/teacher/my-courses")
-    public ApiResponse<Page<CourseResponse>> myTeachingCourses(
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long educatorId,
-            Pageable pageable) {
-        return ApiResponse.ok(courseBizService.listCoursesByEducator(educatorId, pageable));
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<Page<CourseResponse>> myTeachingCourses(Pageable pageable) {
+        return ApiResponse.ok(courseBizService.listCoursesByEducator(AuthContext.getCurrentUserId(), pageable));
     }
 }

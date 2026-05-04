@@ -63,6 +63,9 @@ public class UserEntity extends BaseEntity {
         this.disableReason = null;
     }
 
+    // Setters (for testing)
+    public void setStatus(UserStatus status) { this.status = status; }
+
     // Getters
     public String getEmail() { return email; }
     public String getPassword() { return password; }

@@ -1,12 +1,14 @@
 package com.esmile.edu.api;
 
 import com.esmile.edu.common.auth.VerificationCodeService;
+import com.esmile.edu.module.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -21,6 +23,9 @@ class RedeemCourseStatusTest {
     @Autowired
     private VerificationCodeService verificationCodeService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     void redeemCourseStatusValidation() throws Exception {
         String teacherEmail = "teacher_stat_" + System.currentTimeMillis() + "@test.com";
@@ -33,10 +38,19 @@ class RedeemCourseStatusTest {
             .andExpect(status().isOk());
 
         String teacherCode = verificationCodeService.getStoredCode(teacherEmail);
-        mockMvc.perform(post("/api/v1/teacher/auth/verify-code")
+        MvcResult teacherResult = mockMvc.perform(post("/api/v1/teacher/auth/verify-code")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\": \"" + teacherEmail + "\", \"code\": \"" + teacherCode + "\"}"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andReturn();
+
+        String teacherToken = com.jayway.jsonpath.JsonPath.read(teacherResult.getResponse().getContentAsString(), "$.data.token");
+
+        // 教师创建后是PENDING_APPROVAL状态，需要设为ACTIVE才能创建课程
+        userRepository.findByEmail(teacherEmail).ifPresent(user -> {
+            user.setStatus(com.esmile.edu.module.user.UserStatus.ACTIVE);
+            userRepository.saveAndFlush(user);
+        });
 
         // Create a draft course (NOT published)
         String courseJson = """
@@ -47,7 +61,7 @@ class RedeemCourseStatusTest {
             }
             """;
         mockMvc.perform(post("/api/v1/teacher/courses")
-                .header("X-User-Id", "1")
+                .header("Authorization", "Bearer " + teacherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(courseJson))
             .andExpect(status().isOk());
@@ -61,7 +75,7 @@ class RedeemCourseStatusTest {
             }
             """;
         mockMvc.perform(post("/api/v1/teacher/redeem-codes/generate")
-                .header("X-User-Id", "1")
+                .header("Authorization", "Bearer " + teacherToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(generateJson))
             .andExpect(status().isOk());
