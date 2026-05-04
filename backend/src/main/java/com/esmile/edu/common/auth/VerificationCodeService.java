@@ -1,71 +1,72 @@
 package com.esmile.edu.common.auth;
 
+import com.esmile.edu.module.auth.VerificationCodeEntity;
+import com.esmile.edu.module.auth.VerificationCodeRepository;
+import com.esmile.edu.module.user.Role;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.LocalDateTime;
 
 /**
- * In-memory verification code storage for MVP stage.
- * Stores codes with email as key and 5-minute expiry.
+ * Service for generating and verifying verification codes.
+ * Uses database persistence instead of in-memory storage.
  */
 @Service
 public class VerificationCodeService {
 
-    private static final int CODE_LENGTH = 6;
-    private static final long EXPIRY_SECONDS = 300; // 5 minutes
+    private static final Logger log = LoggerFactory.getLogger(VerificationCodeService.class);
 
-    private final Map<String, CodeEntry> codeStore = new ConcurrentHashMap<>();
+    private static final int CODE_LENGTH = 6;
+    private static final long EXPIRY_MINUTES = 5;
+
+    private final VerificationCodeRepository verificationCodeRepository;
     private final SecureRandom random = new SecureRandom();
 
-    private record CodeEntry(String code, long expiresAt) {}
+    public VerificationCodeService(VerificationCodeRepository verificationCodeRepository) {
+        this.verificationCodeRepository = verificationCodeRepository;
+    }
 
     /**
      * Generates and stores a 6-digit verification code for the given email.
-     * Any previously stored code for this email is replaced.
+     * Any previously stored valid code for this email is replaced.
      */
-    public String generateCode(String email) {
+    @Transactional
+    public String generateCode(String email, Role role) {
         String code = String.format("%06d", random.nextInt(1000000));
-        codeStore.put(email, new CodeEntry(code, Instant.now().getEpochSecond() + EXPIRY_SECONDS));
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(EXPIRY_MINUTES);
+
+        VerificationCodeEntity entity = new VerificationCodeEntity(email, code, role, expiresAt);
+        verificationCodeRepository.save(entity);
+
+        log.info("Generated verification code for {} ({}), expires at {}", email, role, expiresAt);
         return code;
     }
 
     /**
      * Validates the provided code against the stored code for the email.
-     * Removes the code after successful verification.
+     * Marks the code as used after successful verification.
      * @return true if code is valid and not expired, false otherwise
      */
+    @Transactional
     public boolean verifyCode(String email, String code) {
-        CodeEntry entry = codeStore.get(email);
-        if (entry == null) {
-            return false;
-        }
-        if (Instant.now().getEpochSecond() > entry.expiresAt()) {
-            codeStore.remove(email);
-            return false;
-        }
-        if (!entry.code().equals(code)) {
-            return false;
-        }
-        codeStore.remove(email);
-        return true;
-    }
+        LocalDateTime now = LocalDateTime.now();
 
-    /**
-     * Gets the stored code for testing purposes (MVP only).
-     * Should be removed or disabled in production.
-     */
-    public String getStoredCode(String email) {
-        CodeEntry entry = codeStore.get(email);
-        if (entry == null) {
-            return null;
+        VerificationCodeEntity entity = verificationCodeRepository
+                .findValidByEmailAndCode(email, code, now)
+                .orElse(null);
+
+        if (entity == null) {
+            log.debug("Verification code not found or invalid for email: {}", email);
+            return false;
         }
-        if (Instant.now().getEpochSecond() > entry.expiresAt()) {
-            codeStore.remove(email);
-            return null;
-        }
-        return entry.code();
+
+        // Mark as used
+        verificationCodeRepository.markAsUsed(entity.getId(), LocalDateTime.now());
+        log.info("Verification code used successfully for email: {}", email);
+        return true;
     }
 }

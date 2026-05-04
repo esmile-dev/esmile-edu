@@ -7,7 +7,6 @@ import com.esmile.edu.common.exception.course.CourseNotFoundException;
 import com.esmile.edu.common.exception.redeem.RedeemCodeNotFoundException;
 import com.esmile.edu.dto.request.GenerateCodesRequest;
 import com.esmile.edu.dto.response.GenerateCodesResponse;
-import com.esmile.edu.dto.response.RedeemCodeResponse;
 import com.esmile.edu.dto.response.RedeemResultResponse;
 import com.esmile.edu.module.course.CourseEntity;
 import com.esmile.edu.module.course.CourseRepository;
@@ -16,12 +15,9 @@ import com.esmile.edu.module.course.EnrollmentEntity;
 import com.esmile.edu.module.course.EnrollmentRepository;
 import com.esmile.edu.module.redeem.RedeemCodeEntity;
 import com.esmile.edu.module.redeem.RedeemCodeRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,17 +89,5 @@ public class RedeemBizService {
         redeemCodeRepository.save(redeemCode);
 
         return new RedeemResultResponse(course.getTitle(), enrollment.getId());
-    }
-
-    @Transactional(readOnly = true)
-    public Page<RedeemCodeResponse> listCodesByCreator(Long createdBy, Pageable pageable) {
-        return redeemCodeRepository.findByCreatedBy(createdBy, pageable)
-            .map(RedeemCodeResponse::from);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<RedeemCodeResponse> listCodesByCourse(Long courseId, Pageable pageable) {
-        return redeemCodeRepository.findAll(pageable)
-            .map(RedeemCodeResponse::from);
     }
 }

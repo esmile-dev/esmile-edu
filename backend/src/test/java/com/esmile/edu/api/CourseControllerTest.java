@@ -1,6 +1,6 @@
 package com.esmile.edu.api;
 
-import com.esmile.edu.common.auth.VerificationCodeService;
+import com.esmile.edu.common.email.MockEmailProvider;
 import com.esmile.edu.module.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ class CourseControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private VerificationCodeService verificationCodeService;
+    private MockEmailProvider mockEmailProvider;
 
     @Autowired
     private UserRepository userRepository;
@@ -36,7 +36,7 @@ class CourseControllerTest {
                 .content("{\"email\": \"" + teacherEmail + "\"}"))
             .andExpect(status().isOk());
 
-        String teacherCode = verificationCodeService.getStoredCode(teacherEmail);
+        String teacherCode = mockEmailProvider.getLastSentCode(teacherEmail);
         MvcResult result = mockMvc.perform(post("/api/v1/teacher/auth/verify-code")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\": \"" + teacherEmail + "\", \"code\": \"" + teacherCode + "\"}"))

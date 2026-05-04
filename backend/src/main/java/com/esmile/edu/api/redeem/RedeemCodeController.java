@@ -12,8 +12,6 @@ import com.esmile.edu.dto.response.RedeemCodeResponse;
 import com.esmile.edu.dto.response.RedeemResultResponse;
 import com.esmile.edu.module.user.Role;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -46,10 +44,4 @@ public class RedeemCodeController {
         return ApiResponse.ok(redeemBizService.redeemCode(request.code(), AuthContext.getCurrentUserId()));
     }
 
-    // 查看兑换码列表（教师）
-    @GetMapping("/teacher/redeem-codes")
-    @RequireRole(Role.TEACHER)
-    public ApiResponse<Page<RedeemCodeResponse>> listCodes(Pageable pageable) {
-        return ApiResponse.ok(redeemBizService.listCodesByCreator(AuthContext.getCurrentUserId(), pageable));
-    }
 }

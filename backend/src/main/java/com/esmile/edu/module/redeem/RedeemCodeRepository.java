@@ -12,5 +12,4 @@ public interface RedeemCodeRepository extends JpaRepository<RedeemCodeEntity, Lo
     Optional<RedeemCodeEntity> findByCode(String code);
     List<RedeemCodeEntity> findByCourseId(Long courseId);
     List<RedeemCodeEntity> findByCreatedBy(Long createdBy);
-    Page<RedeemCodeEntity> findByCreatedBy(Long createdBy, Pageable pageable);
 }

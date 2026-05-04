@@ -2,7 +2,9 @@ package com.esmile.edu.biz;
 
 import com.esmile.edu.common.auth.JwtService;
 import com.esmile.edu.common.auth.PasswordService;
+import com.esmile.edu.common.auth.RateLimitService;
 import com.esmile.edu.common.auth.VerificationCodeService;
+import com.esmile.edu.common.email.EmailService;
 import com.esmile.edu.common.exception.BusinessException;
 import com.esmile.edu.common.exception.user.CannotModifyAdminStatusException;
 import com.esmile.edu.common.exception.user.EmailAlreadyExistsException;
@@ -35,16 +37,22 @@ public class UserBizService {
     private final PasswordService passwordService;
     private final JwtService jwtService;
     private final VerificationCodeService verificationCodeService;
+    private final RateLimitService rateLimitService;
+    private final EmailService emailService;
 
     public UserBizService(
             UserRepository userRepository,
             PasswordService passwordService,
             JwtService jwtService,
-            VerificationCodeService verificationCodeService) {
+            VerificationCodeService verificationCodeService,
+            RateLimitService rateLimitService,
+            EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordService = passwordService;
         this.jwtService = jwtService;
         this.verificationCodeService = verificationCodeService;
+        this.rateLimitService = rateLimitService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -92,14 +100,22 @@ public class UserBizService {
     }
 
     /**
-     * Sends a verification code to the email (MVP: logs to console).
+     * Sends a verification code to the email with rate limiting.
      * Auto-creates user if not exists.
      */
     @Transactional
-    public void sendCode(String email, Role role) {
-        String code = verificationCodeService.generateCode(email);
-        // MVP: Log code to console instead of sending email
-        log.info("Verification code for {} ({}): {}", email, role, code);
+    public void sendCode(String email, Role role, String clientIp) {
+        // Check rate limits
+        rateLimitService.checkEmailRateLimit(email);
+        rateLimitService.checkIpRateLimit(clientIp);
+
+        // Generate and persist verification code
+        String code = verificationCodeService.generateCode(email, role);
+
+        // Send email
+        emailService.sendVerificationCode(email, code);
+
+        log.info("Verification code sent to {} ({}) via {}", email, role, emailService.getProviderName());
     }
 
     /**
@@ -109,8 +125,6 @@ public class UserBizService {
     @Transactional
     public AuthResponse verifyCode(String email, String code, Role role) {
         if (!verificationCodeService.verifyCode(email, code)) {
-            // Check if code exists but is expired vs never existed
-            // For simplicity, return invalid code error
             throw new InvalidVerificationCodeException();
         }
 

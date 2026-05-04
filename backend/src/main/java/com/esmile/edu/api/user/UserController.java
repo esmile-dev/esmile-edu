@@ -11,6 +11,7 @@ import com.esmile.edu.dto.response.AuthResponse;
 import com.esmile.edu.dto.response.UserResponse;
 import com.esmile.edu.module.user.Role;
 import com.esmile.edu.module.user.UserStatus;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,10 +26,26 @@ public class UserController {
         this.userBizService = userBizService;
     }
 
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // For multiple proxies, take the first IP
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
+    }
+
     // 学生认证 - 发送验证码
     @PostMapping("/student/auth/send-code")
-    public ApiResponse<Void> sendCodeStudent(@Valid @RequestBody SendCodeRequest request) {
-        userBizService.sendCode(request.email(), Role.STUDENT);
+    public ApiResponse<Void> sendCodeStudent(@Valid @RequestBody SendCodeRequest request,
+                                             HttpServletRequest httpRequest) {
+        userBizService.sendCode(request.email(), Role.STUDENT, getClientIp(httpRequest));
         return ApiResponse.ok(null);
     }
 
@@ -46,8 +63,9 @@ public class UserController {
 
     // 教师认证 - 发送验证码
     @PostMapping("/teacher/auth/send-code")
-    public ApiResponse<Void> sendCodeTeacher(@Valid @RequestBody SendCodeRequest request) {
-        userBizService.sendCode(request.email(), Role.TEACHER);
+    public ApiResponse<Void> sendCodeTeacher(@Valid @RequestBody SendCodeRequest request,
+                                             HttpServletRequest httpRequest) {
+        userBizService.sendCode(request.email(), Role.TEACHER, getClientIp(httpRequest));
         return ApiResponse.ok(null);
     }
 

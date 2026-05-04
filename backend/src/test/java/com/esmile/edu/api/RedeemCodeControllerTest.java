@@ -1,6 +1,6 @@
 package com.esmile.edu.api;
 
-import com.esmile.edu.common.auth.VerificationCodeService;
+import com.esmile.edu.common.email.MockEmailProvider;
 import com.esmile.edu.module.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ class RedeemCodeControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private VerificationCodeService verificationCodeService;
+    private MockEmailProvider mockEmailProvider;
 
     @Autowired
     private UserRepository userRepository;
@@ -37,7 +37,7 @@ class RedeemCodeControllerTest {
                 .content("{\"email\": \"" + teacherEmail + "\"}"))
             .andExpect(status().isOk());
 
-        String teacherCode = verificationCodeService.getStoredCode(teacherEmail);
+        String teacherCode = mockEmailProvider.getLastSentCode(teacherEmail);
         MvcResult teacherResult = mockMvc.perform(post("/api/v1/teacher/auth/verify-code")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\": \"" + teacherEmail + "\", \"code\": \"" + teacherCode + "\"}"))
@@ -95,7 +95,7 @@ class RedeemCodeControllerTest {
                 .content("{\"email\": \"" + studentEmail + "\"}"))
             .andExpect(status().isOk());
 
-        String studentCode = verificationCodeService.getStoredCode(studentEmail);
+        String studentCode = mockEmailProvider.getLastSentCode(studentEmail);
         mockMvc.perform(post("/api/v1/student/auth/verify-code")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\": \"" + studentEmail + "\", \"code\": \"" + studentCode + "\"}"))
@@ -112,7 +112,7 @@ class RedeemCodeControllerTest {
                 .content("{\"email\": \"" + studentEmail + "\"}"))
             .andExpect(status().isOk());
 
-        String studentCode = verificationCodeService.getStoredCode(studentEmail);
+        String studentCode = mockEmailProvider.getLastSentCode(studentEmail);
         MvcResult studentResult = mockMvc.perform(post("/api/v1/student/auth/verify-code")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\": \"" + studentEmail + "\", \"code\": \"" + studentCode + "\"}"))
