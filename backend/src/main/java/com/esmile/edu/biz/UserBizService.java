@@ -57,20 +57,15 @@ public class UserBizService {
 
     @Transactional
     public UserResponse registerStudent(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyExistsException();
-        }
-        UserEntity user = new UserEntity(
-            request.email(),
-            passwordService.encode(request.password()),
-            request.nickname(),
-            Role.STUDENT
-        );
-        return UserResponse.from(userRepository.save(user));
+        return register(request, Role.STUDENT);
     }
 
     @Transactional
     public UserResponse registerTeacher(RegisterRequest request) {
+        return register(request, Role.TEACHER);
+    }
+
+    private UserResponse register(RegisterRequest request, Role role) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException();
         }
@@ -78,7 +73,7 @@ public class UserBizService {
             request.email(),
             passwordService.encode(request.password()),
             request.nickname(),
-            Role.TEACHER
+            role
         );
         return UserResponse.from(userRepository.save(user));
     }

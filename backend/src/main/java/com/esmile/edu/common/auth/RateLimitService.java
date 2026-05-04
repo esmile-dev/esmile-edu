@@ -71,11 +71,10 @@ public class RateLimitService {
                         typeName, identifier, windowMinutes);
                 throw new VerificationCodeRateLimitException();
             }
-            // Increment existing window
-            existingWindow.incrementCount();
-            rateLimitRepository.save(existingWindow);
-            log.debug("Rate limit count for {} {}: {}/{}",
-                    typeName, identifier, existingWindow.getRequestCount(), limit);
+            // Atomic increment - avoids race condition
+            rateLimitRepository.incrementCount(existingWindow.getId(), now);
+            log.debug("Rate limit incremented for {} {}: {}/{}",
+                    typeName, identifier, existingWindow.getRequestCount() + 1, limit);
         } else {
             // Create new window
             RateLimitRequestEntity newWindow = new RateLimitRequestEntity(

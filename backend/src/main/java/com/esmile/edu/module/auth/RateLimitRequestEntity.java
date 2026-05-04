@@ -49,10 +49,6 @@ public class RateLimitRequestEntity extends BaseEntity {
         return !now.isBefore(windowStart) && !now.isAfter(windowEnd);
     }
 
-    public void incrementCount() {
-        this.requestCount++;
-    }
-
     // Getters
     public String getIdentifier() { return identifier; }
     public IdentifierType getIdentifierType() { return identifierType; }
