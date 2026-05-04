@@ -8,7 +8,7 @@
 
 **技术栈**:
 - 前端：Vue 3 + Vite + shadcn/ui
-- 后端：Spring Boot 3.x (Java 25) + Spring Data JPA
+- 后端：Spring Boot 3.x (Java 21) + Spring Data JPA
 - 数据库：PostgreSQL
 - 视频托管：腾讯云 VOD
 
@@ -101,7 +101,7 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 
 ## 4. 后端规范 (Spring Boot 3.x)
 
-### 3.1 技术版本
+### 4.1 技术版本
 
 | 组件 | 版本 |
 |------|------|
@@ -110,46 +110,75 @@ Types: feat, fix, refactor, docs, test, chore, perf, ci
 | PostgreSQL | 15+ |
 | JPA/Hibernate | 6.x |
 
+> ⚠️ **注意**: 项目使用单体分层架构（非多模块），所有代码在 `backend/src/main/java/com/esmile/edu/` 下
+
 **重要**: Spring Boot 3.x 使用 `jakarta.*` 命名空间（原 `javax.*` 已废弃）
 
 ---
 
-### 3.2 模块结构
+### 4.2 分层包结构
+
+**单模块 + 分层包架构**：
 
 ```
-src/backend/
-├── esmile-edu-common/              # 通用模块
-│   └── com/esmile/edu/common/
-│       ├── config/                 # 配置类
-│       ├── exception/              # 异常定义
-│       ├── response/               # 统一响应
-│       └── util/                   # 工具类
-├── esmile-edu-user/                # 用户模块
-│   └── com/esmile/edu/user/
-│       ├── domain/                # 领域层
-│       │   ├── model/             # 实体、值对象
-│       │   ├── repository/        # 仓储接口
-│       │   └── service/           # 领域服务
-│       ├── application/           # 应用层
-│       │   ├── dto/              # 数据传输对象
-│       │   ├── service/          # 应用服务
-│       │   └── port/             # 端口接口
-│       ├── infrastructure/        # 基础设施层
-│       │   └── persistence/       # 持久化适配器
-│       └── api/                   # REST 接口（含用户端、管理端）
-│           ├── UserController     # 用户端
-│           └── AdminController   # 管理端
-├── esmile-edu-course/              # 课程模块
-└── esmile-edu-redeem/              # 兑换码模块
+backend/src/main/java/com/esmile/edu/
+├── common/                          # 公共组件
+│   ├── auth/                        # 认证授权（JwtService, PasswordService, AuthContext等）
+│   ├── config/                      # 配置类
+│   ├── email/                       # 邮件服务
+│   ├── exception/                   # 异常定义（含子包user/course/redeem/video）
+│   └── GlobalExceptionHandler.java   # 全局异常处理
+├── module/                          # 数据层：实体 + Repository
+│   ├── user/
+│   │   ├── UserEntity.java
+│   │   ├── UserRepository.java
+│   │   ├── Role.java
+│   │   └── UserStatus.java
+│   ├── course/
+│   │   ├── CourseEntity.java
+│   │   ├── ChapterEntity.java
+│   │   ├── LessonEntity.java
+│   │   ├── EnrollmentEntity.java
+│   │   └── *Repository.java
+│   ├── redeem/
+│   │   ├── RedeemCodeEntity.java
+│   │   └── RedeemCodeRepository.java
+│   └── auth/
+│       ├── VerificationCodeEntity.java
+│       └── VerificationCodeRepository.java
+├── biz/                            # 业务层：聚合服务
+│   ├── UserBizService.java
+│   ├── CourseBizService.java
+│   ├── RedeemBizService.java
+│   └── VideoService.java
+├── dto/                            # 数据传输对象
+│   ├── request/
+│   └── response/
+├── api/                            # 接口层：Controller
+│   ├── user/
+│   │   └── UserController.java
+│   ├── course/
+│   │   └── CourseController.java
+│   ├── redeem/
+│   │   └── RedeemCodeController.java
+│   └── video/
+│       └── VideoController.java
+└── EspmileEduApplication.java       # 启动类
 ```
 
-**包名规范**:
-- 使用 `module.user` 而非 `module-user`（Java 包名禁止使用连字符）
-- 所有 REST 控制器放在 `api` 包下，按端点类型拆分为 `XxxController` 和 `XxxAdminController`
+**各层职责**：
+| 包 | 职责 | 依赖约束 |
+|----|------|----------|
+| **module/** | 数据模型、基础 Repository | 无业务逻辑 |
+| **biz/** | 跨模块业务聚合、事务边界 | 依赖多个 module Repository |
+| **dto/** | 请求/响应对象 | 无依赖 |
+| **api/** | HTTP 处理、参数校验 | 依赖 biz 服务 |
+
+**依赖方向**：`api → biz → module → common`（严格单向）
 
 ---
 
-### 3.3 API 响应格式
+### 4.3 API 响应格式
 
 ```java
 public record ApiResponse<T>(
@@ -177,7 +206,7 @@ public record ApiResponse<T>(
 
 ---
 
-### 3.4 异常处理
+### 4.4 异常处理
 
 **异常基类**:
 ```java
@@ -211,7 +240,7 @@ public class GlobalExceptionHandler {
 
 ---
 
-### 3.5 JPA 实体规范
+### 4.5 JPA 实体规范
 
 **基础实体**:
 ```java
@@ -256,7 +285,7 @@ public class User extends BaseEntity {
 
 ---
 
-### 3.6 DTO 规范
+### 4.6 DTO 规范
 
 **使用 Java Record** (Java 17+):
 ```java
@@ -278,7 +307,7 @@ public record UserResponse(Long id, String email, String nickname, Role role) {}
 
 ---
 
-### 3.7 REST API 规范
+### 4.7 REST API 规范
 
 **URL 规范**:
 - 使用名词复数: `/api/v1/users`, `/api/v1/courses`
@@ -300,178 +329,114 @@ public record UserResponse(Long id, String email, String nickname, Role role) {}
 
 ---
 
-### 3.8 DDD 设计原则
+### 4.8 分层包架构
 
-#### 3.8.1 依赖规则
+#### 4.8.1 分层职责
 
-**核心原则**: 源代码依赖只能指向内部层级，外层不知道内层存在。
+| 包 | 职责 | 依赖约束 |
+|----|------|----------|
+| **module/** | 数据模型、基础 Repository（仅 CRUD） | 无业务逻辑 |
+| **biz/** | 跨模块业务聚合、事务边界 | 依赖多个 module Repository |
+| **dto/** | 请求/响应对象、复杂聚合对象 | 无依赖 |
+| **api/** | HTTP 处理、参数校验、路由 | 依赖 biz 服务 |
+
+#### 4.8.2 依赖方向
 
 ```
-        ┌─────────────────────────┐
-        │   API (Controllers)    │  ← 依赖 Application
-        └────────────┬────────────┘
-                     │
-        ┌────────────▼────────────┐
-        │      Application        │  ← 依赖 Domain
-        │    (Use Cases/Services) │
-        └────────────┬────────────┘
-                     │
-        ┌────────────▼────────────┐
-        │        Domain           │  ← 无依赖（核心）
-        │  (Entities, Value Objs) │
-        └─────────────────────────┘
-
-        Infrastructure (Adapters) ──► Domain Ports (接口)
-        （外层，可依赖内层，内层无感知）
+api → biz → module → common
 ```
 
-**强制规则**:
-- Domain 层不得导入任何 Spring、Jakarta、Infrastructure 包的类
-- Repository 接口定义在 Domain 层，实现在 Infrastructure 层
-- Application 层协调领域对象，不包含业务逻辑
+**严格单向依赖，禁止反向调用**。
 
-#### 3.8.2 端口与适配器
+#### 4.8.3 module 层规范
 
-**端口类型**:
-- **Driving Port（主端口）**: 用例接口，定义在 Application 层
-- **Driven Port（从端口）**: 基础设施接口，定义在 Domain 层
+```
+module/{name}/
+├── {Name}Entity.java              # 实体（JPA 注解）
+└── {Name}Repository.java         # 继承 JpaRepository
+```
 
+**规范**：
+- 仅包含数据字段和 JPA 注解
+- Repository 仅继承 `JpaRepository`
+- 不含业务方法
+
+#### 4.8.4 biz 层规范
+
+```
+biz/
+├── UserBizService.java            # 用户业务聚合
+├── CourseBizService.java         # 课程业务聚合
+└── RedeemBizService.java        # 兑换码业务聚合
+```
+
+**规范**：
+- 聚合多个 module 的 Repository
+- 处理跨模块业务逻辑
+- 通过 `@Transactional` 控制事务
+
+**示例**：
 ```java
-// Domain 层 - Driven Port（基础设施接口）
-public interface RedeemCodeRepository {
-    RedeemCode findByCode(String code);
-    void save(RedeemCode redeemCode);
-}
-
-// Infrastructure 层 - Adapter（实现）
-@Repository
-public class JpaRedeemCodeRepository implements RedeemCodeRepository {
-    // JPA implementation
-}
-
-// Application 层 - Driving Port（用例接口）
-public interface GenerateRedeemCodeUseCase {
-    RedeemCode generate(Long courseId, LocalDateTime expiresAt);
-}
-```
-
-**适配器注册**: 通过 Spring `@Configuration` 或 `@Primary` 进行绑定
-
-#### 3.8.3 防腐层（ACL）
-
-**设计原则**: 防腐层用于隔离外部系统概念与领域概念，仅在语义冲突时使用。
-
-**触发条件**（满足任一条件）:
-1. 外部 API 语义与领域概念严重不匹配
-2. 外部 API 即将变更，需要隔离影响
-3. 需要将多个外部调用组合为单一领域操作
-
-**不必要场景**:
-- 简单的一对一映射（如 UserRepository.findById）
-- 稳定的外部 API（如腾讯云 VOD SDK）
-
-```java
-// ACL 示例：外部模型 → 领域对象
 @Service
-public class TencentVodAcl {
-    public Video toDomain(TencentVodResponse response) {
-        return new Video(
-            VideoId.from(response.getFileId()),
-            new VideoUrl(response.getUrl()),
-            Duration.ofSeconds(response.getDuration())
-        );
+public class RedeemBizService {
+    private final UserRepository userRepository;
+    private final CourseRepository courseRepository;
+    private final RedeemCodeRepository redeemCodeRepository;
+    private final EnrollmentRepository enrollmentRepository;
+
+    @Transactional
+    public RedeemResultResponse redeemCode(String code, Long userId) {
+        // 聚合 user + course + redeemCode + enrollment
     }
 }
 ```
 
-#### 3.8.4 聚合边界
+#### 4.8.5 api 层规范
 
-**规则**: 聚合是领域对象的一致性边界。聚合内对象共同维护业务不变式，跨聚合引用使用 ID。
+```
+api/
+├── user/
+│   └── UserController.java
+├── course/
+│   └── CourseController.java
+└── redeem/
+    └── RedeemCodeController.java
+```
+
+**规范**：
+- Controller 仅做参数校验和响应转换
+- 业务逻辑全部下沉到 biz 层
+
+#### 4.8.6 实体边界规则
+
+**跨实体引用必须使用 ID，禁止使用对象引用**：
 
 ```java
-// 聚合根示例
+// 正确
 @Entity
-@Table(name = "courses")
-public class Course extends BaseEntity {
-    @Id
-    private Long id;
-
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    private List<Chapter> chapters;
-
-    // 聚合根控制其内部对象
-    public void addChapter(Chapter chapter) {
-        chapters.add(chapter);
-        chapter.setCourse(this);
-    }
-}
-
-// 跨聚合引用 - 使用 ID 而非对象引用
-@Entity
-@Table(name = "enrollments")
-public class Enrollment extends BaseEntity {
+public class EnrollmentEntity {
     @Column(name = "user_id")
-    private Long userId;  // ← 使用 ID，引用 User 聚合
+    private Long userId;
 
     @Column(name = "course_id")
-    private Long courseId;  // ← 使用 ID，引用 Course 聚合
+    private Long courseId;
+}
+
+// 错误
+@Entity
+public class EnrollmentEntity {
+    @ManyToOne
+    private UserEntity user;        // 禁止！
 }
 ```
 
-#### 3.8.5 领域事件
+#### 4.8.7 演进策略
 
-**规则**: 领域事件表示发生在领域中的事实，用于跨聚合或跨模块通信。
-
-```java
-// 领域事件 - 定义在 Domain 层
-public record RedeemCodeGeneratedEvent(
-    RedeemCodeId redeemCodeId,
-    CourseId courseId,
-    UserId redeemerId
-) {}
-
-// Application 层 - 发布事件
-@Service
-public class RedeemApplicationService {
-    public void redeem(String code) {
-        // ... 业务逻辑
-        eventPublisher.publish(new RedeemCodeGeneratedEvent(...));
-    }
-}
-```
-
-#### 3.8.6 值对象
-
-**规则**: 值对象不可变，按值比较，用于描述领域的无标识概念。
-
-```java
-// 值对象示例
-public record Email(String value) {
-    public Email {
-        if (value == null || !value.contains("@")) {
-            throw new IllegalArgumentException("Invalid email");
-        }
-    }
-}
-
-// 在实体中使用 @Embedded
-@Embeddable
-public class EmailAttribute {
-    @Column(name = "email")
-    private String value;
-}
-```
-
-#### 3.8.7 限界上下文边界
-
-**规则**: 每个模块（user、course、redeem）是独立的限界上下文。跨上下文通信通过事件或 API，不得直接引用其他上下文的实体。
-
-```
-user 模块  ←→  事件/API  ←→  course 模块
-   ↓                              ↓
- User 实体                   Course 实体
-（独立）                    （独立）
-```
+| 阶段 | 触发条件 | 动作 |
+|------|----------|------|
+| **Phase 1: MVP** | 当前 | 单模块 + 分层包 |
+| **Phase 2: 增长期** | PMF 验证，团队扩展 | 抽取 biz 层为独立模块 |
+| **Phase 3: 规模化** | 团队 > 5 人 | 完整 DDD 分层 + 事件驱动 |
 
 ---
 
@@ -546,20 +511,25 @@ frontend/src/
 ```
 esmile-edu/
 ├── docs/
-│   ├── specs/              # PRD 和设计文档
-│   └── superpowers/specs/  # 技能文档
-├── frontend/               # Vue 3 前端
+│   ├── specs/                  # PRD 和设计文档
+│   ├── backend/technical/      # 后端技术文档
+│   ├── frontend/technical/     # 前端技术文档
+│   ├── ux-ui/                 # UX/UI设计文档
+│   └── production-readiness-tasks.md  # Production-Ready任务清单
+├── frontend/                   # Vue 3 前端
 │   └── src/
-│       ├── student/        # 学生端
-│       ├── teacher/        # 教师端
-│       ├── admin/          # 管理端
-│       └── common/         # 公共组件
-├── backend/                # Spring Boot 后端
-│   ├── esmile-edu-common/
-│   ├── esmile-edu-user/
-│   ├── esmile-edu-course/
-│   └── esmile-edu-redeem/
-└── .worktrees/            # 工作树目录（已忽略）
+│       ├── student/           # 学生端
+│       ├── teacher/           # 教师端
+│       ├── admin/             # 管理端
+│       └── common/            # 公共组件
+├── backend/                   # Spring Boot 后端 (单体分层架构)
+│   └── src/main/java/com/esmile/edu/
+│       ├── api/               # Controller层
+│       ├── biz/               # 业务聚合层
+│       ├── module/            # 数据模型层
+│       ├── dto/               # 数据传输对象
+│       └── common/            # 公共组件
+└── .worktrees/               # 工作树目录（已忽略）
 ```
 
 ---

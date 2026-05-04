@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-- **前端**: Vue 3 + Vite
+- **前端**: Vue 3 + Vite + Tailwind CSS
 - **后端**: Spring Boot 3.x (Java 25)
 - **数据库**: PostgreSQL + Spring Data JPA
 - **视频托管**: 腾讯云 VOD
@@ -15,6 +15,20 @@
 - 课程管理（创建、发布、章节、课时）
 - 视频上传与播放（带防盗链）
 - 兑换码生成与兑换
+- 用户权限管理（学生/教师/管理员）
+
+## 项目结构
+
+```
+esmile-edu/
+├── docs/
+│   ├── specs/                     # 产品需求文档
+│   ├── backend/technical/         # 后端技术文档
+│   ├── frontend/technical/         # 前端技术文档
+│   └── production-readiness-tasks.md  # Production-Ready任务清单
+├── frontend/                      # Vue 3 前端
+└── backend/                       # Spring Boot 后端
+```
 
 ## 开发流程
 
@@ -22,5 +36,11 @@
 
 ## 相关文档
 
+### 产品
 - [MVP PRD](./docs/specs/2026-05-02-esmile-edu-mvp-prd.md)
 - [产品说明](./docs/specs/2026-05-02-esmile-edu-product-overview.md)
+
+### 技术文档
+- [后端技术文档](./docs/backend/technical/README.md)
+- [前端技术文档](./docs/frontend/technical/README.md)
+- [Production-Ready 任务清单](./docs/backend/production-readiness-tasks.md)
