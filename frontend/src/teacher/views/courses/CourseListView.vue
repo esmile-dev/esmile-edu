@@ -95,7 +95,7 @@ async function handlePublish(courseId: number) {
               class="w-full h-full object-cover"
             />
           </div>
-          <CardContent class="p-4">
+          <CardContent class="p-4 pt-5">
             <div class="flex items-start justify-between gap-2">
               <h3 class="font-semibold line-clamp-1">{{ course.title }}</h3>
               <Badge :variant="course.status === 'PUBLISHED' ? 'default' : 'secondary'">
