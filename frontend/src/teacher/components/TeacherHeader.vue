@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/common/stores/auth'
 
@@ -63,9 +62,3 @@ function getInitials(name: string) {
     </div>
   </header>
 </template>
-
-<script lang="ts">
-export default {
-  components: { Badge }
-}
-</script>

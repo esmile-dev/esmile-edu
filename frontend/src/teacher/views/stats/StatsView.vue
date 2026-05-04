@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { teacherApi } from '@/teacher/api/teacherApi'
 import TeacherHeader from '@/teacher/components/TeacherHeader.vue'
-import { Users, BookOpen, CheckCircle, Clock, TrendingUp, Award } from 'lucide-vue-next'
+import { Users, BookOpen, CheckCircle, TrendingUp, Award } from 'lucide-vue-next'
 
 interface TeacherStats {
   totalStudents: number
@@ -19,29 +19,7 @@ const error = ref('')
 
 onMounted(async () => {
   try {
-    // Get courses data for stats
-    const response = await teacherApi.getCourses({ size: 100 })
-    const courses = response.content
-
-    let totalLessons = 0
-    let publishedCourses = 0
-
-    for (const course of courses) {
-      if (course.status === 'PUBLISHED') publishedCourses++
-      const detail = await teacherApi.getCourseDetail(course.id)
-      for (const chapter of detail.chapters) {
-        totalLessons += chapter.lessons.length
-      }
-    }
-
-    stats.value = {
-      totalStudents: response.content.reduce((acc, c) => acc + (c.lessonCount || 0) * 10, 0), // Mock data
-      activeEnrollments: response.content.reduce((acc, c) => acc + (c.lessonCount || 0) * 5, 0), // Mock data
-      totalCourses: courses.length,
-      publishedCourses,
-      totalLessons,
-      avgProgress: 68, // Mock data
-    }
+    stats.value = await teacherApi.getStats()
   } catch (err: any) {
     error.value = err.message || '加载失败'
   } finally {

@@ -6,6 +6,7 @@ import {
   mockEnrollments,
   mockRedeemResult,
   mockTeacherCourses,
+  mockTeacherCourseDetails,
   mockTeacherStats,
 } from './mockData'
 
@@ -123,7 +124,7 @@ export const mockApi = {
 
   async getTeacherCourse(id: number) {
     await randomDelay()
-    const course = mockCourseDetails[id]
+    const course = mockTeacherCourseDetails[id]
     if (!course) throw new Error('课程不存在')
     return course
   },

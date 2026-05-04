@@ -17,7 +17,8 @@ const useMock = import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.VITE
 // Mock API caller that matches the apiClient interface
 class MockApiCaller {
   private getPath(url: string): string {
-    return url.replace('/api/v1', '').replace('/teacher', '').replace('/admin', '')
+    // Strip base URL and api version
+    return url.replace('/api/v1', '')
   }
 
   private getIdFromUrl(url: string): number | undefined {
@@ -32,10 +33,10 @@ class MockApiCaller {
     await new Promise(r => setTimeout(r, 200 + Math.random() * 300))
 
     // Student Auth
-    if (path.includes('/student/auth/send-code')) {
+    if (path === '/student/auth/send-code') {
       return mockApi.sendCode((params as any)?.email || '') as T
     }
-    if (path.includes('/student/auth/verify-code')) {
+    if (path === '/student/auth/verify-code') {
       return mockApi.verifyCode((params as any)?.email || '', (params as any)?.code || '') as T
     }
 
@@ -43,7 +44,7 @@ class MockApiCaller {
     if (path === '/student/courses') {
       return mockApi.getCourses(params as any) as T
     }
-    if (path.match(/\/student\/courses\/\d+$/)) {
+    if (path.match(/^\/student\/courses\/\d+$/)) {
       return mockApi.getCourse(id!) as T
     }
     if (path === '/student/my-courses') {
@@ -54,63 +55,63 @@ class MockApiCaller {
     }
 
     // Teacher Auth
-    if (path.includes('/teacher/auth/send-code')) {
+    if (path === '/teacher/auth/send-code') {
       return mockApi.teacherSendCode((params as any)?.email || '') as T
     }
-    if (path.includes('/teacher/auth/verify-code')) {
+    if (path === '/teacher/auth/verify-code') {
       return mockApi.teacherVerifyCode((params as any)?.email || '', (params as any)?.code || '') as T
     }
-    if (path.includes('/teacher/auth/me')) {
+    if (path === '/teacher/auth/me') {
       return mockApi.getTeacherMe() as T
     }
 
     // Teacher Courses
-    if (path === '/teacher/courses') {
+    if (path === '/teacher/courses' && !id) {
       return mockApi.getTeacherCourses(params as any) as T
     }
-    if (path.match(/\/teacher\/courses\/\d+$/) && !path.includes('/publish')) {
-      return mockApi.getTeacherCourse(id!) as T
-    }
-    if (path.match(/\/teacher\/courses\/\d+\/publish/)) {
-      return mockApi.publishTeacherCourse(id!) as T
-    }
-    if (path === '/teacher/courses' && !id) {
+    if (path.match(/^\/teacher\/courses\/\d+$/) && params && (params as any)?.title) {
+      // POST create course
       return mockApi.createTeacherCourse(params as any) as T
     }
-    if (path.match(/\/teacher\/courses\/\d+$/)) {
+    if (path.match(/^\/teacher\/courses\/\d+$/) && !path.includes('/publish') && params && Object.keys(params).length > 0) {
+      // PUT update course (has body)
       return mockApi.updateTeacherCourse(id!, params as any) as T
     }
-    if (path.match(/\/teacher\/courses\/\d+$/)) {
-      return mockApi.deleteTeacherCourse(id!) as T
+    if (path.match(/^\/teacher\/courses\/\d+$/) && !path.includes('/publish')) {
+      // GET course detail
+      return mockApi.getTeacherCourse(id!) as T
+    }
+    if (path.match(/^\/teacher\/courses\/\d+\/publish$/)) {
+      return mockApi.publishTeacherCourse(id!) as T
     }
 
     // Teacher Chapters
-    if (path === '/teacher/chapters') {
+    if (path === '/teacher/chapters' && params && (params as any)?.courseId) {
       return mockApi.createChapter(params as any) as T
     }
-    if (path.match(/\/teacher\/chapters\/\d+$/)) {
+    if (path.match(/^\/teacher\/chapters\/\d+$/) && params && Object.keys(params).length > 0) {
       return mockApi.updateChapter(id!, params as any) as T
     }
-    if (path.match(/\/teacher\/chapters\/\d+$/)) {
+    if (path.match(/^\/teacher\/chapters\/\d+$/) && (!params || Object.keys(params).length === 0)) {
       return mockApi.deleteChapter(id!) as T
     }
 
     // Teacher Lessons
-    if (path === '/teacher/lessons') {
+    if (path === '/teacher/lessons' && params && (params as any)?.chapterId) {
       return mockApi.createLesson(params as any) as T
     }
-    if (path.match(/\/teacher\/lessons\/\d+$/)) {
+    if (path.match(/^\/teacher\/lessons\/\d+$/) && params && Object.keys(params).length > 0) {
       return mockApi.updateLesson(id!, params as any) as T
     }
-    if (path.match(/\/teacher\/lessons\/\d+$/)) {
+    if (path.match(/^\/teacher\/lessons\/\d+$/) && (!params || Object.keys(params).length === 0)) {
       return mockApi.deleteLesson(id!) as T
     }
 
     // Teacher Video
-    if (path.includes('/teacher/video/apply-upload')) {
+    if (path === '/teacher/video/apply-upload') {
       return mockApi.applyUpload(params as any) as T
     }
-    if (path.includes('/teacher/video/commit-upload')) {
+    if (path === '/teacher/video/commit-upload') {
       return mockApi.commitUpload(params as any) as T
     }
 
@@ -120,10 +121,10 @@ class MockApiCaller {
     }
 
     // Admin Auth
-    if (path.includes('/admin/auth/login')) {
+    if (path === '/admin/auth/login') {
       return mockApi.adminLogin((params as any)?.email || '', (params as any)?.password || '') as T
     }
-    if (path.includes('/admin/auth/me')) {
+    if (path === '/admin/auth/me') {
       return mockApi.getAdminMe() as T
     }
 
@@ -131,13 +132,13 @@ class MockApiCaller {
     if (path === '/admin/users') {
       return mockApi.getUsers(params as any) as T
     }
-    if (path.match(/\/admin\/users\/\d+$/) && !path.includes('/approve') && !path.includes('/status')) {
+    if (path.match(/^\/admin\/users\/\d+$/) && !path.includes('/approve') && !path.includes('/status')) {
       return mockApi.getUser(id!) as T
     }
-    if (path.match(/\/admin\/users\/\d+\/approve/)) {
+    if (path.match(/^\/admin\/users\/\d+\/approve$/)) {
       return mockApi.approveTeacher(id!) as T
     }
-    if (path.match(/\/admin\/users\/\d+\/status/)) {
+    if (path.match(/^\/admin\/users\/\d+\/status$/)) {
       return mockApi.updateUserStatus(id!, (params as any)?.status || '') as T
     }
 
@@ -145,13 +146,13 @@ class MockApiCaller {
     if (path === '/admin/courses') {
       return mockApi.getAdminCourses(params as any) as T
     }
-    if (path.match(/\/admin\/courses\/\d+$/) && !path.includes('/status')) {
+    if (path.match(/^\/admin\/courses\/\d+$/) && !path.includes('/status')) {
       return mockApi.getAdminCourse(id!) as T
     }
-    if (path.match(/\/admin\/courses\/\d+\/status/)) {
+    if (path.match(/^\/admin\/courses\/\d+\/status$/)) {
       return mockApi.updateCourseStatus(id!, (params as any)?.status || '') as T
     }
-    if (path.match(/\/admin\/courses\/\d+$/)) {
+    if (path.match(/^\/admin\/courses\/\d+$/) && (!params || Object.keys(params).length === 0)) {
       return mockApi.deleteCourse(id!) as T
     }
 
@@ -160,19 +161,133 @@ class MockApiCaller {
       return mockApi.getStats() as T
     }
 
-    throw new Error(`Mock not implemented for: ${url}`)
+    throw new Error(`Mock not implemented for GET: ${url}`)
   }
 
   async post<T>(url: string, data?: object): Promise<T> {
-    return this.get<T>(url, data as any)
+    const path = this.getPath(url)
+    const id = this.getIdFromUrl(path)
+
+    await new Promise(r => setTimeout(r, 200 + Math.random() * 300))
+
+    // Student Auth
+    if (path === '/student/auth/send-code') {
+      return mockApi.sendCode((data as any)?.email || '') as T
+    }
+    if (path === '/student/auth/verify-code') {
+      return mockApi.verifyCode((data as any)?.email || '', (data as any)?.code || '') as T
+    }
+
+    // Student Redeem
+    if (path === '/student/redeem') {
+      return mockApi.redeemCode((data as any)?.code || '') as T
+    }
+
+    // Teacher Auth
+    if (path === '/teacher/auth/send-code') {
+      return mockApi.teacherSendCode((data as any)?.email || '') as T
+    }
+    if (path === '/teacher/auth/verify-code') {
+      return mockApi.teacherVerifyCode((data as any)?.email || '', (data as any)?.code || '') as T
+    }
+
+    // Teacher Courses
+    if (path === '/teacher/courses') {
+      return mockApi.createTeacherCourse(data as any) as T
+    }
+    if (path.match(/^\/teacher\/courses\/\d+\/publish$/)) {
+      return mockApi.publishTeacherCourse(id!) as T
+    }
+
+    // Teacher Chapters
+    if (path === '/teacher/chapters') {
+      return mockApi.createChapter(data as any) as T
+    }
+
+    // Teacher Lessons
+    if (path === '/teacher/lessons') {
+      return mockApi.createLesson(data as any) as T
+    }
+
+    // Teacher Video
+    if (path === '/teacher/video/commit-upload') {
+      return mockApi.commitUpload(data as any) as T
+    }
+
+    // Admin Auth
+    if (path === '/admin/auth/login') {
+      return mockApi.adminLogin((data as any)?.email || '', (data as any)?.password || '') as T
+    }
+
+    // Admin Users
+    if (path.match(/^\/admin\/users\/\d+\/approve$/)) {
+      return mockApi.approveTeacher(id!) as T
+    }
+
+    throw new Error(`Mock not implemented for POST: ${url}`)
   }
 
   async put<T>(url: string, data?: object): Promise<T> {
-    return this.get<T>(url, data as any)
+    const path = this.getPath(url)
+    const id = this.getIdFromUrl(path)
+
+    await new Promise(r => setTimeout(r, 200 + Math.random() * 300))
+
+    // Teacher Courses
+    if (path.match(/^\/teacher\/courses\/\d+$/)) {
+      return mockApi.updateTeacherCourse(id!, data as any) as T
+    }
+
+    // Teacher Chapters
+    if (path.match(/^\/teacher\/chapters\/\d+$/)) {
+      return mockApi.updateChapter(id!, data as any) as T
+    }
+
+    // Teacher Lessons
+    if (path.match(/^\/teacher\/lessons\/\d+$/)) {
+      return mockApi.updateLesson(id!, data as any) as T
+    }
+
+    // Admin Users
+    if (path.match(/^\/admin\/users\/\d+\/status$/)) {
+      return mockApi.updateUserStatus(id!, (data as any)?.status || '') as T
+    }
+
+    // Admin Courses
+    if (path.match(/^\/admin\/courses\/\d+\/status$/)) {
+      return mockApi.updateCourseStatus(id!, (data as any)?.status || '') as T
+    }
+
+    throw new Error(`Mock not implemented for PUT: ${url}`)
   }
 
   async delete<T>(url: string): Promise<T> {
-    return this.get<T>(url)
+    const path = this.getPath(url)
+    const id = this.getIdFromUrl(path)
+
+    await new Promise(r => setTimeout(r, 200 + Math.random() * 300))
+
+    // Teacher Courses
+    if (path.match(/^\/teacher\/courses\/\d+$/)) {
+      return mockApi.deleteTeacherCourse(id!) as T
+    }
+
+    // Teacher Chapters
+    if (path.match(/^\/teacher\/chapters\/\d+$/)) {
+      return mockApi.deleteChapter(id!) as T
+    }
+
+    // Teacher Lessons
+    if (path.match(/^\/teacher\/lessons\/\d+$/)) {
+      return mockApi.deleteLesson(id!) as T
+    }
+
+    // Admin Courses
+    if (path.match(/^\/admin\/courses\/\d+$/)) {
+      return mockApi.deleteCourse(id!) as T
+    }
+
+    throw new Error(`Mock not implemented for DELETE: ${url}`)
   }
 }
 

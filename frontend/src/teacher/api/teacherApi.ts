@@ -90,4 +90,15 @@ export const teacherApi = {
   async commitUpload(data: { lessonId: number; videoId: string }): Promise<any> {
     return apiClient.post('/api/v1/teacher/video/commit-upload', data)
   },
+
+  async getStats(): Promise<{
+    totalStudents: number
+    activeEnrollments: number
+    totalCourses: number
+    publishedCourses: number
+    totalLessons: number
+    avgProgress: number
+  }> {
+    return apiClient.get('/api/v1/teacher/stats')
+  },
 }
