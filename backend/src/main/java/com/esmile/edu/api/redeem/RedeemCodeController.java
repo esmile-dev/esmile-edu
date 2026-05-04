@@ -8,11 +8,13 @@ import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.GenerateCodesRequest;
 import com.esmile.edu.dto.request.RedeemCodeRequest;
 import com.esmile.edu.dto.response.GenerateCodesResponse;
-import com.esmile.edu.dto.response.RedeemCodeResponse;
 import com.esmile.edu.dto.response.RedeemResultResponse;
 import com.esmile.edu.module.user.Role;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
