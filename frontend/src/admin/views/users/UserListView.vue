@@ -28,9 +28,9 @@ async function fetchUsers() {
     if (statusFilter.value) params.status = statusFilter.value
 
     const response = await adminApi.getUsers(params)
-    users.value = response.content
-    totalPages.value = response.totalPages
-    totalElements.value = response.totalElements
+    users.value = response.content || []
+    totalPages.value = response.totalPages || 0
+    totalElements.value = response.totalElements || 0
   } catch (err: any) {
     error.value = err.message || '加载失败'
   } finally {

@@ -327,6 +327,13 @@ class RealApiClient {
           sessionStorage.removeItem('token')
           window.location.href = '/login'
         }
+        // Extract error message from response body
+        if (error.response?.data) {
+          const errorData = error.response.data as { code?: number; message?: string }
+          const message = errorData?.message || error.message
+          const code = errorData?.code || error.response?.status || 500
+          return Promise.reject(new ApiError(code, message))
+        }
         return Promise.reject(error)
       }
     )

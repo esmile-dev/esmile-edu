@@ -18,9 +18,10 @@ onMounted(async () => {
 
 async function fetchCourses() {
   loading.value = true
+  error.value = ''
   try {
     const response = await teacherApi.getCourses()
-    courses.value = response.content
+    courses.value = response.content || []
   } catch (err: any) {
     error.value = err.message || '加载失败'
   } finally {

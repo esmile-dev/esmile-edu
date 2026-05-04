@@ -28,9 +28,9 @@ async function fetchCourses() {
   error.value = ''
   try {
     const response = await studentApi.getCourses({ page: page.value, size: size.value })
-    courses.value = response.content
-    totalElements.value = response.totalElements
-    totalPages.value = response.totalPages
+    courses.value = response.content || []
+    totalElements.value = response.totalElements || 0
+    totalPages.value = response.totalPages || 0
   } catch (err: any) {
     error.value = err.message || '加载课程失败'
   } finally {

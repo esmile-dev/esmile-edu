@@ -20,14 +20,15 @@ const statusFilter = ref<CourseStatus | ''>('')
 
 async function fetchCourses() {
   loading.value = true
+  error.value = ''
   try {
     const params: any = { page: page.value, size: 20 }
     if (statusFilter.value) params.status = statusFilter.value
 
     const response = await adminApi.getCourses(params)
-    courses.value = response.content
-    totalPages.value = response.totalPages
-    totalElements.value = response.totalElements
+    courses.value = response.content || []
+    totalPages.value = response.totalPages || 0
+    totalElements.value = response.totalElements || 0
   } catch (err: any) {
     error.value = err.message || '加载失败'
   } finally {
