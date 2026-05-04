@@ -336,7 +336,6 @@ view → composable → store/api
 | GET | `/student/auth/me` | 获取当前用户 |
 | GET | `/student/courses` | 课程列表（分页） |
 | GET | `/student/courses/{id}` | 课程详情（含章节课时） |
-| POST | `/student/courses/{id}/enroll` | 选课（直接购买） |
 | POST | `/student/redeem` | 兑换课程 |
 | GET | `/student/my-courses` | 我的课程（已购） |
 
