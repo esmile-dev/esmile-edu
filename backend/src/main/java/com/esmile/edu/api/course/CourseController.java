@@ -3,7 +3,6 @@ package com.esmile.edu.api.course;
 import com.esmile.edu.biz.CourseBizService;
 import com.esmile.edu.common.ApiResponse;
 import com.esmile.edu.common.auth.AuthContext;
-import com.esmile.edu.common.auth.RequireAuth;
 import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.CreateChapterRequest;
 import com.esmile.edu.dto.request.CreateCourseRequest;
@@ -12,7 +11,6 @@ import com.esmile.edu.dto.request.UpdateChapterRequest;
 import com.esmile.edu.dto.request.UpdateCourseRequest;
 import com.esmile.edu.dto.request.UpdateLessonRequest;
 import com.esmile.edu.dto.response.ChapterResponse;
-import com.esmile.edu.dto.response.CourseDetailResponse;
 import com.esmile.edu.dto.response.CourseResponse;
 import com.esmile.edu.dto.response.LessonResponse;
 import com.esmile.edu.module.user.Role;
@@ -20,8 +18,6 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -66,17 +62,6 @@ public class CourseController {
         return ApiResponse.ok(null);
     }
 
-    // 课程浏览
-    @GetMapping("/courses")
-    public ApiResponse<Page<CourseResponse>> listCourses(Pageable pageable) {
-        return ApiResponse.ok(courseBizService.listCourses(pageable));
-    }
-
-    @GetMapping("/courses/{id}")
-    public ApiResponse<CourseDetailResponse> getCourseDetail(@PathVariable Long id) {
-        return ApiResponse.ok(courseBizService.getCourseDetail(id));
-    }
-
     // 章节管理
     @PostMapping("/teacher/chapters")
     @RequireRole(Role.TEACHER)
@@ -119,20 +104,6 @@ public class CourseController {
     public ApiResponse<Void> deleteLesson(@PathVariable Long id) {
         courseBizService.deleteLesson(id, AuthContext.getCurrentUserId());
         return ApiResponse.ok(null);
-    }
-
-    // 选课
-    @PostMapping("/student/courses/{id}/enroll")
-    @RequireAuth
-    public ApiResponse<Void> enrollCourse(@PathVariable Long id) {
-        courseBizService.enrollCourse(AuthContext.getCurrentUserId(), id);
-        return ApiResponse.created(null);
-    }
-
-    @GetMapping("/student/my-courses")
-    @RequireAuth
-    public ApiResponse<List<CourseResponse>> myCourses() {
-        return ApiResponse.ok(courseBizService.listEnrolledCourses(AuthContext.getCurrentUserId()));
     }
 
     @GetMapping("/teacher/my-courses")

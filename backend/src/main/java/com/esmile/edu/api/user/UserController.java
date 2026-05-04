@@ -1,5 +1,6 @@
 package com.esmile.edu.api.user;
 
+import com.esmile.edu.biz.CourseBizService;
 import com.esmile.edu.biz.UserBizService;
 import com.esmile.edu.common.ApiResponse;
 import com.esmile.edu.common.auth.AuthContext;
@@ -8,6 +9,8 @@ import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.SendCodeRequest;
 import com.esmile.edu.dto.request.VerifyCodeRequest;
 import com.esmile.edu.dto.response.AuthResponse;
+import com.esmile.edu.dto.response.CourseDetailResponse;
+import com.esmile.edu.dto.response.CourseResponse;
 import com.esmile.edu.dto.response.UserResponse;
 import com.esmile.edu.module.user.Role;
 import com.esmile.edu.module.user.UserStatus;
@@ -17,13 +20,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1")
 public class UserController {
     private final UserBizService userBizService;
+    private final CourseBizService courseBizService;
 
-    public UserController(UserBizService userBizService) {
+    public UserController(UserBizService userBizService, CourseBizService courseBizService) {
         this.userBizService = userBizService;
+        this.courseBizService = courseBizService;
     }
 
     private String getClientIp(HttpServletRequest request) {
@@ -59,6 +66,35 @@ public class UserController {
     @RequireAuth
     public ApiResponse<UserResponse> getCurrentStudent() {
         return ApiResponse.ok(userBizService.findById(AuthContext.getCurrentUserId()));
+    }
+
+    // 学生课程 - 课程列表
+    @GetMapping("/student/courses")
+    @RequireAuth
+    public ApiResponse<Page<CourseResponse>> listCourses(Pageable pageable) {
+        return ApiResponse.ok(courseBizService.listCourses(pageable));
+    }
+
+    // 学生课程 - 课程详情
+    @GetMapping("/student/courses/{id}")
+    @RequireAuth
+    public ApiResponse<CourseDetailResponse> getCourseDetail(@PathVariable Long id) {
+        return ApiResponse.ok(courseBizService.getCourseDetail(id));
+    }
+
+    // 学生课程 - 选课
+    @PostMapping("/student/courses/{id}/enroll")
+    @RequireAuth
+    public ApiResponse<Void> enrollCourse(@PathVariable Long id) {
+        courseBizService.enrollCourse(AuthContext.getCurrentUserId(), id);
+        return ApiResponse.created(null);
+    }
+
+    // 学生课程 - 我的课程
+    @GetMapping("/student/my-courses")
+    @RequireAuth
+    public ApiResponse<List<CourseResponse>> myCourses() {
+        return ApiResponse.ok(courseBizService.listEnrolledCourses(AuthContext.getCurrentUserId()));
     }
 
     // 教师认证 - 发送验证码
