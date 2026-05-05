@@ -9,6 +9,12 @@ import type {
   PageResponse,
 } from '@/common/types/api'
 
+export interface VideoPlaybackUrl {
+  playbackUrl: string
+  duration: number
+  coverImage?: string
+}
+
 export const studentApi = {
   // Auth
   async sendCode(email: string): Promise<void> {
@@ -39,6 +45,11 @@ export const studentApi = {
   // Redeem
   async redeemCode(code: string): Promise<RedeemResult> {
     return apiClient.post<RedeemResult>('/api/v1/student/redeem', { code })
+  },
+
+  // Video
+  async getPlaybackUrl(videoId: string): Promise<VideoPlaybackUrl> {
+    return apiClient.get<VideoPlaybackUrl>(`/video/playback-url/${videoId}`)
   },
 
   // My Courses

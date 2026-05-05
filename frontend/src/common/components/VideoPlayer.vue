@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { studentApi } from '@/student/api/studentApi'
 
 export type VideoProvider = 'native' | 'tcplayer'
 
@@ -47,12 +48,39 @@ const isPlaying = ref(false)
 const currentTime = ref(0)
 const duration = ref(0)
 const error = ref<Error | null>(null)
+const isLoading = ref(true)
+const playbackUrl = ref<string | null>(null)
 
 const effectiveProvider = computed<VideoProvider>(() => {
   if (props.provider !== 'auto') return props.provider
-  if (props.videoUrl?.includes('vod')) return 'tcplayer'
+  if (props.videoUrl?.includes('vod') || props.videoId) return 'tcplayer'
   return 'native'
 })
+
+const videoSrc = computed(() => {
+  if (props.videoUrl) return props.videoUrl
+  if (playbackUrl.value) return playbackUrl.value
+  return undefined
+})
+
+watch(() => props.videoId, async (newVideoId) => {
+  if (!newVideoId) {
+    playbackUrl.value = null
+    isLoading.value = false
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const response = await studentApi.getPlaybackUrl(newVideoId)
+    playbackUrl.value = response.playbackUrl
+  } catch (err) {
+    console.error('Failed to get playback URL:', err)
+    emit('error', err as Error)
+  } finally {
+    isLoading.value = false
+  }
+}, { immediate: true })
 
 function handleLoadedMetadata() {
   if (videoRef.value) {
@@ -130,7 +158,7 @@ defineExpose({
       v-if="effectiveProvider === 'native'"
       ref="videoRef"
       class="w-full h-full object-contain"
-      :src="videoUrl"
+      :src="videoSrc"
       :poster="poster"
       :autoplay="autoplay"
       :muted="muted"
@@ -143,22 +171,21 @@ defineExpose({
       @error="handleError"
     />
 
-    <!-- TCPlayer placeholder - to be implemented later -->
+    <!-- TCPlayer for VOD videos -->
     <div
       v-else-if="effectiveProvider === 'tcplayer'"
-      class="w-full h-full flex items-center justify-center text-white"
+      id="tcplayer-container"
+      class="w-full h-full"
     >
-      <div class="text-center">
-        <p class="text-lg mb-2">TCPlayer integration pending</p>
-        <p class="text-sm text-gray-400">
-          {{ videoId ? `Video ID: ${videoId}` : 'No videoId provided' }}
-        </p>
-      </div>
+      <video
+        ref="videoRef"
+        class="video-js vjs-default-skin vjs-big-play-centered"
+      />
     </div>
 
     <!-- Loading state -->
     <div
-      v-if="!isReady && !error"
+      v-if="isLoading || (!isReady && !error)"
       class="absolute inset-0 flex items-center justify-center bg-black/50"
     >
       <div class="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
