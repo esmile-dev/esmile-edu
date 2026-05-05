@@ -2,6 +2,7 @@ package com.esmile.edu.common.video;
 
 import com.esmile.edu.common.exception.BusinessRuleException;
 import com.esmile.edu.common.exception.video.VideoUploadFailedException;
+import com.esmile.edu.dto.response.VideoPlaybackResponse;
 import com.esmile.edu.dto.response.VideoUploadResult;
 import com.esmile.edu.module.course.CourseRepository;
 import com.esmile.edu.module.course.LessonEntity;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Random;
@@ -54,6 +56,9 @@ public class TencentVodProvider implements VideoStoragePort {
 
     @Value("${tencent.vod.secret-key:}")
     private String secretKey;
+
+    @Value("${tencent.vod.signature-expire:7200}")
+    private int signatureExpireSeconds;
 
     public TencentVodProvider(LessonRepository lessonRepository, CourseRepository courseRepository) {
         this.lessonRepository = lessonRepository;
@@ -175,6 +180,163 @@ public class TencentVodProvider implements VideoStoragePort {
         } catch (Exception e) {
             log.error("[TENCENT VOD] Failed to get playback URL", e);
             throw new VideoUploadFailedException("Failed to get playback URL: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get playback URL with Key anti-hotlinking signed URL.
+     *
+     * @param videoId the VOD video ID
+     * @return VideoPlaybackResponse with signed URL, duration, and cover image
+     */
+    public VideoPlaybackResponse getPlaybackUrlWithSign(String videoId) {
+        if (vodClient == null) {
+            throw new VideoUploadFailedException("Tencent VOD credentials not configured");
+        }
+
+        try {
+            DescribeMediaInfosRequest request = new DescribeMediaInfosRequest();
+            request.setFileIds(new String[]{ videoId });
+
+            DescribeMediaInfosResponse response = vodClient.DescribeMediaInfos(request);
+
+            if (response.getMediaInfoSet() == null || response.getMediaInfoSet().length == 0) {
+                throw new VideoUploadFailedException("Video not found: " + videoId);
+            }
+
+            var mediaInfo = response.getMediaInfoSet()[0];
+            String originalUrl = getMediaUrl(mediaInfo);
+            if (originalUrl == null || originalUrl.isBlank()) {
+                throw new VideoUploadFailedException("Playback URL not found for video: " + videoId);
+            }
+
+            String signedUrl = generateSignedUrl(originalUrl);
+            Integer duration = getDuration(mediaInfo);
+            String coverImage = getCoverImage(mediaInfo);
+
+            return new VideoPlaybackResponse(signedUrl, duration, coverImage);
+        } catch (VideoUploadFailedException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[TENCENT VOD] Failed to get signed playback URL", e);
+            throw new VideoUploadFailedException("Failed to get signed playback URL: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Extract MediaUrl from media info using reflection.
+     */
+    private String getMediaUrl(Object mediaInfo) {
+        try {
+            java.lang.reflect.Method method = mediaInfo.getClass().getMethod("getMediaUrl");
+            return (String) method.invoke(mediaInfo);
+        } catch (Exception e) {
+            log.debug("[TENCENT VOD] Could not get MediaUrl via reflection: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Extract duration from media info metadata using reflection.
+     */
+    private Integer getDuration(Object mediaInfo) {
+        try {
+            java.lang.reflect.Method metadataMethod = mediaInfo.getClass().getMethod("getMetaData");
+            Object metadata = metadataMethod.invoke(mediaInfo);
+            if (metadata != null) {
+                java.lang.reflect.Method durationMethod = metadata.getClass().getMethod("getDuration");
+                return (Integer) durationMethod.invoke(metadata);
+            }
+        } catch (Exception e) {
+            log.debug("[TENCENT VOD] Could not get duration via reflection: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Extract cover image URL from media info using reflection.
+     */
+    private String getCoverImage(Object mediaInfo) {
+        try {
+            java.lang.reflect.Method method = mediaInfo.getClass().getMethod("getImageUrlSet");
+            Object[] imageUrls = (Object[]) method.invoke(mediaInfo);
+            if (imageUrls != null && imageUrls.length > 0) {
+                // Get the first image URL
+                java.lang.reflect.Method getUrlMethod = imageUrls[0].getClass().getMethod("getImageUrl");
+                return (String) getUrlMethod.invoke(imageUrls[0]);
+            }
+        } catch (Exception e) {
+            log.debug("[TENCENT VOD] Could not get cover image via reflection: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Generate Key anti-hotlinking signed URL.
+     * <p>
+     * Algorithm:
+     * signStr = secretKey + dir + t + rand
+     * sign = MD5(signStr)
+     * signedUrl = originalUrl + "?t=" + t + "&rand=" + rand + "&sign=" + sign
+     * </p>
+     */
+    private String generateSignedUrl(String originalUrl) {
+        try {
+            // Extract directory path from URL
+            java.net.URL url = new java.net.URL(originalUrl);
+            String dir = extractDirFromPath(url.getPath());
+
+            // Generate timestamp and random
+            long t = System.currentTimeMillis() / 1000 + signatureExpireSeconds;
+            int rand = RANDOM.nextInt(Integer.MAX_VALUE);
+
+            // Build sign string: secretKey + dir + t + rand
+            String signStr = secretKey + dir + Long.toHexString(t).toLowerCase() + rand;
+
+            // Calculate MD5 signature
+            String sign = md5(signStr);
+
+            // Build signed URL
+            return originalUrl + "?t=" + Long.toHexString(t).toLowerCase() + "&rand=" + rand + "&sign=" + sign;
+        } catch (Exception e) {
+            log.error("[TENCENT VOD] Failed to generate signed URL", e);
+            throw new VideoUploadFailedException("Failed to generate signed URL: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Extract directory path from full URL path.
+     * For example: /dir1/dir2/file.mp4 -> /dir1/dir2/
+     */
+    private String extractDirFromPath(String path) {
+        if (path == null || path.isBlank()) {
+            return "/";
+        }
+        int lastSlash = path.lastIndexOf('/');
+        if (lastSlash <= 0) {
+            return "/";
+        }
+        return path.substring(0, lastSlash + 1);
+    }
+
+    /**
+     * Calculate MD5 hash of input string.
+     */
+    private String md5(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : digest) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new VideoUploadFailedException("Failed to calculate MD5: " + e.getMessage());
         }
     }
 
