@@ -1,51 +1,41 @@
 package com.esmile.edu.biz;
 
-import com.esmile.edu.common.exception.BusinessException;
-import com.esmile.edu.common.exception.course.LessonNotFoundException;
-import com.esmile.edu.common.exception.video.VideoUploadFailedException;
-import com.esmile.edu.dto.response.VideoUploadSignature;
+import com.esmile.edu.common.video.VideoServiceFactory;
+import com.esmile.edu.common.video.VideoStoragePort;
+import com.esmile.edu.dto.response.VideoUploadResult;
 import com.esmile.edu.module.course.LessonEntity;
-import com.esmile.edu.module.course.LessonRepository;
-import com.esmile.edu.module.course.LessonStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 /**
- * Video upload service for Tencent Cloud VOD integration.
- * MVP stage uses mock implementation with simulated responses.
+ * Video upload service.
+ * Delegates to configured VideoStoragePort implementation.
  */
 @Service
 public class VideoService {
-    private final LessonRepository lessonRepository;
 
-    public VideoService(LessonRepository lessonRepository) {
-        this.lessonRepository = lessonRepository;
+    private static final Logger log = LoggerFactory.getLogger(VideoService.class);
+
+    private final VideoServiceFactory videoServiceFactory;
+
+    public VideoService(VideoServiceFactory videoServiceFactory) {
+        this.videoServiceFactory = videoServiceFactory;
     }
 
     /**
      * Apply for video upload signature.
-     * MVP: Returns mock signature data.
      *
      * @param educatorId the educator's user ID
      * @param fileName the video file name
      * @param fileSize the video file size in bytes
-     * @return upload signature with videoId
+     * @return upload result with videoId, signature, and upload URL
      */
-    public VideoUploadSignature applyUpload(Long educatorId, String fileName, long fileSize) {
-        // MVP: Validate file type and size limits
-        validateFile(fileName, fileSize);
-
-        // MVP: Generate mock videoId (in production, this comes from VOD API)
-        String videoId = generateVideoId();
-
-        // MVP: Generate mock signature and upload URL
-        // In production, this would call Tencent VOD API to get real credentials
-        String signature = generateMockSignature(videoId);
-        String uploadUrl = "https://upload.vod.tscloud.com";
-
-        return new VideoUploadSignature(videoId, signature, uploadUrl);
+    public VideoUploadResult applyUpload(Long educatorId, String fileName, long fileSize) {
+        VideoStoragePort provider = videoServiceFactory.getVideoStorage();
+        log.debug("Using video provider: {}", provider.getProviderName());
+        return provider.applyUpload(educatorId, fileName, fileSize);
     }
 
     /**
@@ -58,41 +48,18 @@ public class VideoService {
      */
     @Transactional
     public LessonEntity confirmUpload(Long lessonId, Long educatorId, String videoId) {
-        LessonEntity lesson = lessonRepository.findById(lessonId)
-            .orElseThrow(() -> new LessonNotFoundException(lessonId));
-
-        // MVP: In production, validate videoId ownership and get actual video info
-        lesson.setVideoId(videoId);
-        lesson.setStatus(LessonStatus.PROCESSING);
-
-        return lessonRepository.save(lesson);
+        VideoStoragePort provider = videoServiceFactory.getVideoStorage();
+        return provider.confirmUpload(lessonId, educatorId, videoId);
     }
 
-    private void validateFile(String fileName, long fileSize) {
-        // Validate file extension
-        if (fileName != null && !fileName.isBlank()) {
-            String lowerName = fileName.toLowerCase();
-            if (!lowerName.endsWith(".mp4") && !lowerName.endsWith(".mov")
-                    && !lowerName.endsWith(".avi") && !lowerName.endsWith(".mkv")) {
-                throw new VideoUploadFailedException("不支持的视频格式，仅支持 mp4、mov、avi、mkv");
-            }
-        }
-
-        // Validate file size (10GB limit)
-        if (fileSize <= 0 || fileSize > 10 * 1024 * 1024 * 1024L) {
-            throw new VideoUploadFailedException("视频大小超出限制，最大支持 10GB");
-        }
-    }
-
-    private String generateVideoId() {
-        // MVP: Generate a mock videoId
-        // In production, this would be returned by VOD API after applying for upload
-        return "mock_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-    }
-
-    private String generateMockSignature(String videoId) {
-        // MVP: Generate a mock signature
-        // In production, this would be computed using Tencent VOD SecretKey
-        return "mock_sig_" + videoId;
+    /**
+     * Get playback URL for a video (on-demand generation).
+     *
+     * @param videoId the VOD video ID
+     * @return playback URL
+     */
+    public String getPlaybackUrl(String videoId) {
+        VideoStoragePort provider = videoServiceFactory.getVideoStorage();
+        return provider.getPlaybackUrl(videoId);
     }
 }
