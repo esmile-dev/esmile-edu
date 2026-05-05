@@ -6,6 +6,7 @@ import com.esmile.edu.common.auth.AuthContext;
 import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.CommitUploadRequest;
 import com.esmile.edu.dto.response.LessonResponse;
+import com.esmile.edu.dto.response.VideoPlaybackResponse;
 import com.esmile.edu.dto.response.VideoUploadSignature;
 import com.esmile.edu.module.course.LessonEntity;
 import com.esmile.edu.module.user.Role;
@@ -51,12 +52,15 @@ public class VideoController {
     }
 
     /**
-     * Get playback URL for a video.
+     * Get signed playback URL for a video.
      * GET /video/playback-url/{videoId}
      */
     @GetMapping("/video/playback-url/{videoId}")
-    public ApiResponse<String> getPlaybackUrl(@PathVariable String videoId) {
-        String playbackUrl = videoService.getPlaybackUrl(videoId);
-        return ApiResponse.ok(playbackUrl);
+    public ApiResponse<VideoPlaybackResponse> getPlaybackUrl(@PathVariable String videoId) {
+        VideoPlaybackResponse response = videoService.getPlaybackUrl(
+            videoId,
+            AuthContext.getCurrentUserId()
+        );
+        return ApiResponse.ok(response);
     }
 }
