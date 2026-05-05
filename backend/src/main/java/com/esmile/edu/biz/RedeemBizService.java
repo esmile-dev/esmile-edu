@@ -1,5 +1,6 @@
 package com.esmile.edu.biz;
 
+import com.esmile.edu.common.exception.AuthenticationException;
 import com.esmile.edu.common.exception.BusinessRuleException;
 import com.esmile.edu.common.exception.BusinessException;
 import com.esmile.edu.common.exception.course.AlreadyEnrolledException;
@@ -38,6 +39,12 @@ public class RedeemBizService {
 
     @Transactional
     public GenerateCodesResponse generateCodes(GenerateCodesRequest request, Long createdBy) {
+        if (createdBy == null) {
+            throw new AuthenticationException(
+                    AuthenticationException.INVALID_TOKEN,
+                    "用户未登录，请先登录"
+            );
+        }
         CourseEntity course = courseRepository.findById(request.courseId())
             .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
 

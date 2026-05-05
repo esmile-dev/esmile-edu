@@ -47,8 +47,11 @@
 
 | 变量名 | 示例值 | 说明 |
 |--------|--------|------|
-| `JWT_SECRET` | ******* | JWT 签名密钥（≥32字符） |
+| `JWT_PRIVATE_KEY_PATH` | `resources/keys/private.pem` | RSA 私钥路径 |
+| `JWT_PUBLIC_KEY_PATH` | `resources/keys/public.pem` | RSA 公钥路径 |
 | `EXTERNAL_API_KEY` | ******* | 外部系统 API Key |
+
+**注意**：RSA 密钥在首次启动时自动生成，无需手动配置。
 
 ---
 
@@ -118,13 +121,15 @@ java -jar esmile-edu.jar --spring.profiles.active=prod
 docker run -d \
   --name esmile-edu \
   -p 8080:8080 \
+  -v jwt_keys:/run/secrets/jwt \
   -e SPRING_PROFILES_ACTIVE=prod \
   -e DB_HOST=db-host \
   -e DB_PORT=5432 \
   -e DB_NAME=esmile_edu \
   -e DB_USERNAME=esmile_user \
   -e DB_PASSWORD=****** \
-  -e JWT_SECRET=****** \
+  -e JWT_PRIVATE_KEY_PATH=/run/secrets/jwt/private.pem \
+  -e JWT_PUBLIC_KEY_PATH=/run/secrets/jwt/public.pem \
   esmile-edu:latest
 ```
 

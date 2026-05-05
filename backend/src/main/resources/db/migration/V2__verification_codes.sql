@@ -10,6 +10,7 @@ CREATE TABLE verification_codes (
     expires_at TIMESTAMP NOT NULL,
     used_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_verification_code_email_code UNIQUE (email, code)
 );
 

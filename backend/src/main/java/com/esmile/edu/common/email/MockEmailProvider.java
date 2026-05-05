@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Stores last sent code per email for testing purposes.
  */
 @Component
-@Profile("dev")
+//@Profile("dev")
 public class MockEmailProvider implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(MockEmailProvider.class);

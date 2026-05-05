@@ -121,6 +121,12 @@ public class CourseController {
         return ApiResponse.ok(null);
     }
 
+    @GetMapping("/teacher/lessons/{id}")
+    @RequireRole(Role.TEACHER)
+    public ApiResponse<LessonResponse> getLesson(@PathVariable Long id) {
+        return ApiResponse.ok(courseBizService.getLessonById(id));
+    }
+
     // 选课（我的课程）
     @GetMapping("/student/my-courses")
     @RequireAuth

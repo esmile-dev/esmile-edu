@@ -36,7 +36,7 @@ public class RedeemCodeController {
     @PostMapping("/redeem-codes/apply")
     public ApiResponse<GenerateCodesResponse> applyCodes(@Valid @RequestBody GenerateCodesRequest request) {
         // External system uses API Key auth, no user context needed
-        return ApiResponse.created(redeemBizService.generateCodes(request, null));
+        return ApiResponse.created(redeemBizService.generateCodes(request, -1L));
     }
 
     // 学生兑换课程

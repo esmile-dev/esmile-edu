@@ -196,6 +196,12 @@ public class CourseBizService {
         lessonRepository.delete(lesson);
     }
 
+    public LessonResponse getLessonById(Long lessonId) {
+        LessonEntity lesson = lessonRepository.findById(lessonId)
+            .orElseThrow(() -> new LessonNotFoundException(lessonId));
+        return LessonResponse.from(lesson);
+    }
+
     @Transactional
     public void enrollCourse(Long userId, Long courseId) {
         if (enrollmentRepository.existsByUserIdAndCourseId(userId, courseId)) {
