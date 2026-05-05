@@ -2,10 +2,15 @@ package com.esmile.edu.module.course;
 
 import com.esmile.edu.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "courses")
+@Getter
+@Setter
 public class CourseEntity extends BaseEntity {
     @Column(nullable = false)
     private String title;
@@ -45,17 +50,4 @@ public class CourseEntity extends BaseEntity {
     public void archive() {
         this.status = CourseStatus.ARCHIVED;
     }
-
-    // Getters
-    public String getTitle() { return title; }
-    public String getDescription() { return description; }
-    public Long getEducatorId() { return educatorId; }
-    public String getCover() { return cover; }
-    public CourseStatus getStatus() { return status; }
-    public LocalDateTime getPublishedAt() { return publishedAt; }
-
-    // Setters
-    public void setTitle(String title) { this.title = title; }
-    public void setDescription(String description) { this.description = description; }
-    public void setCover(String cover) { this.cover = cover; }
 }

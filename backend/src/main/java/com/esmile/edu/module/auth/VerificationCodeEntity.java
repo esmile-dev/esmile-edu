@@ -3,6 +3,9 @@ package com.esmile.edu.module.auth;
 import com.esmile.edu.common.BaseEntity;
 import com.esmile.edu.module.user.Role;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 /**
@@ -11,6 +14,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "verification_codes")
+@Getter
+@Setter
 public class VerificationCodeEntity extends BaseEntity {
 
     @Column(nullable = false)
@@ -56,11 +61,4 @@ public class VerificationCodeEntity extends BaseEntity {
     public void markAsUsed() {
         this.usedAt = LocalDateTime.now();
     }
-
-    // Getters
-    public String getEmail() { return email; }
-    public String getCode() { return code; }
-    public Role getRole() { return role; }
-    public LocalDateTime getExpiresAt() { return expiresAt; }
-    public LocalDateTime getUsedAt() { return usedAt; }
 }

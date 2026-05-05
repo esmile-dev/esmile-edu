@@ -2,6 +2,9 @@ package com.esmile.edu.module.auth;
 
 import com.esmile.edu.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 /**
@@ -9,6 +12,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "rate_limit_requests")
+@Getter
+@Setter
 public class RateLimitRequestEntity extends BaseEntity {
 
     public enum IdentifierType {
@@ -48,18 +53,4 @@ public class RateLimitRequestEntity extends BaseEntity {
         LocalDateTime now = LocalDateTime.now();
         return !now.isBefore(windowStart) && !now.isAfter(windowEnd);
     }
-
-    // Getters
-    public String getIdentifier() { return identifier; }
-    public IdentifierType getIdentifierType() { return identifierType; }
-    public Integer getRequestCount() { return requestCount; }
-    public LocalDateTime getWindowStart() { return windowStart; }
-    public LocalDateTime getWindowEnd() { return windowEnd; }
-
-    // Setters
-    public void setIdentifier(String identifier) { this.identifier = identifier; }
-    public void setIdentifierType(IdentifierType identifierType) { this.identifierType = identifierType; }
-    public void setRequestCount(Integer requestCount) { this.requestCount = requestCount; }
-    public void setWindowStart(LocalDateTime windowStart) { this.windowStart = windowStart; }
-    public void setWindowEnd(LocalDateTime windowEnd) { this.windowEnd = windowEnd; }
 }

@@ -2,10 +2,13 @@ package com.esmile.edu.module.course;
 
 import com.esmile.edu.common.BaseEntity;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "chapters")
+@Getter
+@Setter
 public class ChapterEntity extends BaseEntity {
     @Column(nullable = false)
     private String title;
@@ -24,13 +27,4 @@ public class ChapterEntity extends BaseEntity {
         this.courseId = courseId;
         this.position = position;
     }
-
-    // Getters
-    public String getTitle() { return title; }
-    public Long getCourseId() { return courseId; }
-    public Integer getPosition() { return position; }
-
-    // Setters
-    public void setTitle(String title) { this.title = title; }
-    public void setPosition(Integer position) { this.position = position; }
 }

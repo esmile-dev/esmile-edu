@@ -2,10 +2,15 @@ package com.esmile.edu.module.user;
 
 import com.esmile.edu.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
 public class UserEntity extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email;
@@ -62,17 +67,4 @@ public class UserEntity extends BaseEntity {
         this.disabledAt = null;
         this.disableReason = null;
     }
-
-    // Setters (for testing)
-    public void setStatus(UserStatus status) { this.status = status; }
-
-    // Getters
-    public String getEmail() { return email; }
-    public String getPassword() { return password; }
-    public String getNickname() { return nickname; }
-    public String getAvatar() { return avatar; }
-    public Role getRole() { return role; }
-    public UserStatus getStatus() { return status; }
-    public LocalDateTime getDisabledAt() { return disabledAt; }
-    public String getDisableReason() { return disableReason; }
 }

@@ -4,11 +4,16 @@ import com.esmile.edu.common.BaseEntity;
 import com.esmile.edu.common.exception.redeem.RedeemCodeAlreadyUsedException;
 import com.esmile.edu.common.exception.redeem.RedeemCodeExpiredException;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "redeem_codes")
+@Getter
+@Setter
 public class RedeemCodeEntity extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String code;
@@ -68,14 +73,4 @@ public class RedeemCodeEntity extends BaseEntity {
         this.usedAt = LocalDateTime.now();
         this.usedBy = userId;
     }
-
-    // Getters
-    public String getCode() { return code; }
-    public Long getCourseId() { return courseId; }
-    public RedeemCodeStatus getStatus() { return status; }
-    public Long getCreatedBy() { return createdBy; }
-    public LocalDateTime getUsedAt() { return usedAt; }
-    public Long getUsedBy() { return usedBy; }
-    public LocalDateTime getExpiresAt() { return expiresAt; }
-    public LocalDateTime getCourseExpiresAt() { return courseExpiresAt; }
 }
