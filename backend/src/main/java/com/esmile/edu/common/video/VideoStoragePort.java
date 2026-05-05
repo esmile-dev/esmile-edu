@@ -1,5 +1,6 @@
 package com.esmile.edu.common.video;
 
+import com.esmile.edu.dto.response.VideoPlaybackResponse;
 import com.esmile.edu.dto.response.VideoUploadResult;
 import com.esmile.edu.module.course.LessonEntity;
 
@@ -40,6 +41,14 @@ public interface VideoStoragePort {
      * @return playback URL
      */
     String getPlaybackUrl(String videoId);
+
+    /**
+     * Get playback URL with signed token for time-limited access.
+     *
+     * @param videoId the VOD video ID
+     * @return video playback response with signed URL
+     */
+    VideoPlaybackResponse getPlaybackUrlWithSign(String videoId);
 
     /**
      * Get the provider name.

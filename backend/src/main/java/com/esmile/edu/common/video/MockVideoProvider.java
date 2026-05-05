@@ -4,6 +4,7 @@ import com.esmile.edu.common.exception.BusinessRuleException;
 import com.esmile.edu.common.exception.course.CourseNotFoundException;
 import com.esmile.edu.common.exception.course.LessonNotFoundException;
 import com.esmile.edu.common.exception.video.VideoUploadFailedException;
+import com.esmile.edu.dto.response.VideoPlaybackResponse;
 import com.esmile.edu.dto.response.VideoUploadResult;
 import com.esmile.edu.module.course.CourseEntity;
 import com.esmile.edu.module.course.CourseRepository;
@@ -92,6 +93,13 @@ public class MockVideoProvider implements VideoStoragePort {
     public String getPlaybackUrl(String videoId) {
         log.info("[MOCK VIDEO] Get playback URL: videoId={}", videoId);
         return String.format(PLAYBACK_URL_TEMPLATE, videoId);
+    }
+
+    @Override
+    public VideoPlaybackResponse getPlaybackUrlWithSign(String videoId) {
+        log.info("[MOCK VIDEO] Get signed playback URL: videoId={}", videoId);
+        String playbackUrl = String.format(PLAYBACK_URL_TEMPLATE, videoId);
+        return new VideoPlaybackResponse(playbackUrl, null, null);
     }
 
     @Override
