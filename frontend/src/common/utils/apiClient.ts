@@ -69,6 +69,9 @@ class MockApiCaller {
     if (path === '/teacher/courses' && !id) {
       return mockApi.getTeacherCourses(params as any) as T
     }
+    if (path === '/teacher/my-courses') {
+      return mockApi.getTeacherCourses(params as any) as T
+    }
     if (path.match(/^\/teacher\/courses\/\d+$/) && params && (params as any)?.title) {
       // POST create course
       return mockApi.createTeacherCourse(params as any) as T

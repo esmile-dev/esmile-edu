@@ -90,8 +90,8 @@ async function handlePublish(courseId: number) {
         <Card v-for="course in courses" :key="course.id" class="overflow-hidden">
           <div class="aspect-video bg-muted">
             <img
-              v-if="course.coverImage"
-              :src="course.coverImage"
+              v-if="course.cover"
+              :src="course.cover"
               :alt="course.title"
               class="w-full h-full object-cover"
             />

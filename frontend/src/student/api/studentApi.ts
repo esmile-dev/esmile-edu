@@ -38,7 +38,7 @@ export const studentApi = {
 
   // Redeem
   async redeemCode(code: string): Promise<RedeemResult> {
-    return apiClient.post<RedeemResult>('/api/v1/student/codes/redeem', { code })
+    return apiClient.post<RedeemResult>('/api/v1/student/redeem', { code })
   },
 
   // My Courses

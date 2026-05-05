@@ -50,14 +50,34 @@ function getInitials(name: string) {
       </div>
 
       <div class="flex items-center gap-4">
-        <Button variant="ghost" @click="handleLogout">
-          退出
-        </Button>
-        <Avatar>
-          <AvatarFallback class="bg-primary text-primary-foreground">
-            {{ getInitials(authStore.user?.nickname || 'T') }}
-          </AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="ghost" class="relative h-10 w-10 rounded-full">
+              <Avatar>
+                <AvatarFallback class="bg-primary text-primary-foreground">
+                  {{ getInitials(authStore.user?.nickname || 'T') }}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-64">
+            <DropdownMenuLabel>
+              <div class="flex flex-col space-y-1">
+                <p class="text-sm font-medium">{{ authStore.user?.nickname }}</p>
+                <p class="text-xs text-muted-foreground">{{ authStore.user?.email }}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled>
+              <Badge variant="secondary" class="text-xs mr-2">教师</Badge>
+              账户信息
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem class="text-destructive cursor-pointer" @click="handleLogout">
+              退出登录
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   </header>

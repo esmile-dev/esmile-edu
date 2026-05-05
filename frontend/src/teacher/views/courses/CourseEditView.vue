@@ -17,7 +17,7 @@ const expandedChapters = ref<Set<number>>(new Set())
 
 // New chapter/lesson state
 const newChapterTitle = ref('')
-const newChapterOrder = ref(1)
+const newChapterPosition = ref(1)
 const newLessonTitles = ref<Record<number, string>>({})
 
 onMounted(async () => {
@@ -44,7 +44,7 @@ async function addChapter() {
     await teacherApi.createChapter({
       courseId,
       title: newChapterTitle.value,
-      orderNum: newChapterOrder.value,
+      position: newChapterPosition.value,
     })
     newChapterTitle.value = ''
     // Refresh
@@ -195,7 +195,7 @@ function goToLesson(courseId: number, lessonId: number) {
                 @keyup.enter="addChapter"
               />
               <Input
-                v-model.number="newChapterOrder"
+                v-model.number="newChapterPosition"
                 type="number"
                 placeholder="顺序"
                 class="w-24"

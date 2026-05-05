@@ -44,7 +44,7 @@ export interface Course {
   id: number
   title: string
   description: string | null
-  coverImage: string | null
+  cover: string | null
   educatorName?: string
   educator?: UserSummary
   status?: CourseStatus
@@ -91,19 +91,19 @@ export interface CourseDetailForTeacher extends Course {
 export interface CreateCourseRequest {
   title: string
   description?: string
-  coverImage?: string
+  cover?: string
 }
 
 export interface UpdateCourseRequest {
   title?: string
   description?: string
-  coverImage?: string
+  cover?: string
 }
 
 export interface CreateChapterRequest {
   courseId: number
   title: string
-  orderNum: number
+  position: number
 }
 
 export interface UpdateChapterRequest {
@@ -127,7 +127,7 @@ export interface UpdateLessonRequest {
 export interface MyCourse {
   id: number
   title: string
-  coverImage: string | null
+  cover: string | null
   progress: number
   enrollmentExpiresAt: string | null
   currentLessonId?: number
@@ -180,4 +180,12 @@ export interface LoginResponse {
 export interface VerifyCodeRequest {
   email: string
   code: string
+}
+
+// ============== Video Types ==============
+
+export interface VideoUploadSignature {
+  videoId: string
+  signature: string
+  uploadUrl: string
 }

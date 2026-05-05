@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { studentApi } from '@/student/api/studentApi'
 import type { CourseDetail, Lesson } from '@/common/types/api'
 import StudentHeader from '@/student/components/StudentHeader.vue'
+import VideoPlayer from '@/common/components/VideoPlayer.vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -16,6 +17,7 @@ const course = ref<CourseDetail | null>(null)
 const currentLesson = ref<Lesson | null>(null)
 const loading = ref(true)
 const error = ref('')
+const videoError = ref('')
 
 onMounted(async () => {
   try {
@@ -39,9 +41,14 @@ onMounted(async () => {
   }
 })
 
+function handleVideoError(err: Error) {
+  videoError.value = err.message
+}
+
 function navigateToLesson(lesson: Lesson) {
   router.push(`/student/learn/${courseId}/${lesson.id}`)
   currentLesson.value = lesson
+  videoError.value = ''
 }
 
 function getAllLessons(): Lesson[] {
@@ -82,16 +89,13 @@ function getPrevLesson(): Lesson | null {
       <!-- Content -->
       <div v-else class="max-w-6xl mx-auto">
         <!-- Video Area -->
-        <div class="bg-black aspect-video">
-          <div v-if="currentLesson?.videoUrl && currentLesson?.status === 'READY'" class="w-full h-full">
-            <!-- Video player would go here -->
-            <video
-              :src="currentLesson.videoUrl"
-              controls
-              class="w-full h-full"
-            />
-          </div>
-          <div v-else class="w-full h-full flex items-center justify-center text-white">
+        <div class="bg-black">
+          <VideoPlayer
+            v-if="currentLesson?.videoUrl && currentLesson?.status === 'READY'"
+            :video-url="currentLesson.videoUrl"
+            @error="handleVideoError"
+          />
+          <div v-else class="w-full aspect-video flex items-center justify-center text-white">
             <div class="text-center">
               <p v-if="currentLesson?.status === 'PROCESSING'" class="text-lg">
                 视频处理中，请稍候...

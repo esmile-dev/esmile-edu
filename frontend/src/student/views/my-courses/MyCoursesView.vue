@@ -23,8 +23,9 @@ async function fetchCourses() {
   error.value = ''
   try {
     const response = await studentApi.getMyCourses({ page: page.value, size: size.value })
-    courses.value = response.content || []
-    totalElements.value = response.totalElements || 0
+    // Backend returns array directly, not PageResponse format
+    courses.value = Array.isArray(response) ? response : (response.content || [])
+    totalElements.value = Array.isArray(response) ? response.length : (response.totalElements || 0)
   } catch (err: any) {
     error.value = err.message || '加载失败'
   } finally {
@@ -76,8 +77,8 @@ function goToCourse(course: any) {
         >
           <div class="w-40 h-24 bg-muted rounded-lg overflow-hidden shrink-0">
             <img
-              v-if="course.coverImage"
-              :src="course.coverImage"
+              v-if="course.cover"
+              :src="course.cover"
               :alt="course.title"
               class="w-full h-full object-cover"
             />

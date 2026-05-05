@@ -87,8 +87,8 @@ function getInitials(name: string) {
             <!-- Cover -->
             <div class="aspect-video bg-muted rounded-lg overflow-hidden">
               <img
-                v-if="course.coverImage"
-                :src="course.coverImage"
+                v-if="course.cover"
+                :src="course.cover"
                 :alt="course.title"
                 class="w-full h-full object-cover"
               />
@@ -119,9 +119,9 @@ function getInitials(name: string) {
           <!-- Sidebar -->
           <div>
             <Card class="sticky top-24">
-              <CardContent class="p-6">
+              <CardContent class="p-6 space-y-4">
                 <!-- Instructor -->
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex items-center gap-3">
                   <Avatar>
                     <AvatarFallback class="bg-primary text-primary-foreground">
                       {{ getInitials(course.educator?.nickname || 'T') }}
@@ -134,7 +134,7 @@ function getInitials(name: string) {
                 </div>
 
                 <!-- Stats -->
-                <div class="flex gap-4 mb-4 text-sm">
+                <div class="flex gap-4 text-sm">
                   <span class="text-muted-foreground">
                     {{ course.chapters?.length || 0 }} 章节
                   </span>
@@ -145,10 +145,10 @@ function getInitials(name: string) {
 
                 <!-- Action -->
                 <div v-if="course.enrollmentStatus === 'ACTIVE'">
-                  <Button class="w-full mb-2" @click="handleContinue">
+                  <Button class="w-full" @click="handleContinue">
                     继续学习
                   </Button>
-                  <p class="text-center text-sm text-muted-foreground">
+                  <p class="text-center text-sm text-muted-foreground mt-2">
                     有效期至: {{ course.enrollmentExpiresAt || '永久' }}
                   </p>
                 </div>

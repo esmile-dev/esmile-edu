@@ -168,10 +168,10 @@ const statusLabel = (status: CourseStatus) => {
             <div class="flex items-center justify-between gap-4">
               <div class="flex items-center gap-4 flex-1">
                 <div class="w-16 h-12 bg-muted rounded flex items-center justify-center">
-                  <BookOpen v-if="!course.coverImage" class="w-6 h-6 text-muted-foreground" />
+                  <BookOpen v-if="!course.cover" class="w-6 h-6 text-muted-foreground" />
                   <img
                     v-else
-                    :src="course.coverImage"
+                    :src="course.cover"
                     :alt="course.title"
                     class="w-full h-full object-cover rounded"
                   />

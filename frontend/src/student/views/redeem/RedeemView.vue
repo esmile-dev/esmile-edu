@@ -24,11 +24,12 @@ async function handleRedeem() {
 
   try {
     const result = await studentApi.redeemCode(code.value.toUpperCase())
-    if (result.success) {
+    // Backend returns data directly without success flag when successful
+    if (result && result.courseTitle) {
       success.value = true
-      courseTitle.value = result.courseTitle || '课程'
+      courseTitle.value = result.courseTitle
     } else {
-      error.value = result.errorMessage || '兑换失败'
+      error.value = result?.errorMessage || '兑换失败'
     }
   } catch (err: any) {
     error.value = err.message || '兑换失败，请稍后重试'

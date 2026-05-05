@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { inject } from 'vue'
 
 const props = defineProps<{
+  disabled?: boolean
   as?: string
 }>()
 
-const open = ref(false)
+const dropdown = inject<any>('dropdown')
 
-function toggle() {
-  open.value = !open.value
+function handleClick() {
+  if (props.disabled) return
+  dropdown?.toggleMenu()
 }
-
-function close() {
-  open.value = false
-}
-
-defineExpose({ close })
 </script>
 
 <template>
-  <component :is="props.as || 'button'" @click="toggle">
+  <component
+    :is="props.as || 'button'"
+    @click="handleClick"
+  >
     <slot />
   </component>
 </template>

@@ -11,6 +11,8 @@ import type {
   CreateLessonRequest,
   UpdateLessonRequest,
   PageResponse,
+  Lesson,
+  VideoUploadSignature,
 } from '@/common/types/api'
 
 export const teacherApi = {
@@ -27,9 +29,9 @@ export const teacherApi = {
     return apiClient.get<User>('/api/v1/teacher/auth/me')
   },
 
-  // Courses
+  // Courses - 我的课程
   async getCourses(params?: { page?: number; size?: number }): Promise<PageResponse<Course>> {
-    return apiClient.get<PageResponse<Course>>('/api/v1/teacher/courses', params)
+    return apiClient.get<PageResponse<Course>>('/api/v1/teacher/my-courses', params)
   },
 
   async getCourseDetail(id: number): Promise<CourseDetailForTeacher> {
@@ -49,7 +51,7 @@ export const teacherApi = {
   },
 
   async publishCourse(id: number): Promise<{ id: number; status: string }> {
-    return apiClient.post(`/api/v1/teacher/courses/${id}/publish`)
+    return apiClient.put(`/api/v1/teacher/courses/${id}/publish`)
   },
 
   // Chapters
@@ -78,17 +80,17 @@ export const teacherApi = {
     return apiClient.delete(`/api/v1/teacher/lessons/${id}`)
   },
 
-  // Video
-  async applyUpload(data: { fileName: string; fileSize: number }): Promise<{
-    videoId: string
-    signature: string
-    uploadUrl: string
-  }> {
-    return apiClient.get('/api/v1/teacher/video/apply-upload', { params: data })
+  async getLesson(id: number): Promise<Lesson> {
+    return apiClient.get<Lesson>(`/api/v1/teacher/lessons/${id}`)
   },
 
-  async commitUpload(data: { lessonId: number; videoId: string }): Promise<any> {
-    return apiClient.post('/api/v1/teacher/video/commit-upload', data)
+  // Video
+  async applyUpload(data: { fileName: string; fileSize: number }): Promise<VideoUploadSignature> {
+    return apiClient.get<VideoUploadSignature>('/api/v1/teacher/video/apply-upload', { params: data })
+  },
+
+  async commitUpload(data: { lessonId: number; videoId: string }): Promise<Lesson> {
+    return apiClient.post<Lesson>('/api/v1/teacher/video/commit-upload', data)
   },
 
   async getStats(): Promise<{
