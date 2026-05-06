@@ -1,8 +1,8 @@
 # esmile 教育平台 - MVP PRD
 
-**日期**: 2026-05-02
-**状态**: 需求澄清完成
-**版本**: v1.0
+**日期**: 2026-05-04
+**状态**: 开发中
+**版本**: v1.1
 
 ---
 
@@ -20,44 +20,70 @@
 
 ### 2.1 用户系统
 
-| 功能 | 说明 |
-|------|------|
-| 邮箱注册/登录 | 用户通过邮箱和验证码注册和登录 |
-| 微信登录 | 后期接入（MVP 排除） |
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 邮箱验证码登录 | 用户通过邮箱和验证码注册和登录 | ✅ 已实现 |
+| 角色 | 学生、教师（需审批）、管理员 | ✅ 已实现 |
+| 用户状态管理 | ACTIVE / PENDING_APPROVAL / DISABLED | ✅ 已实现 |
+| 微信登录 | 后期接入（MVP 排除） | ❌ 排除 |
 
 ### 2.2 课程系统
 
-教育者（老师）功能：
-- 创建课程（标题、描述、封面图）
-- 管理课程状态：草稿 ↔ 已发布
-- 添加章节（支持多个章节）
-- 添加课时（每个课时含视频）
-- 上传视频：平台内上传 → 腾讯云自动转码
-- 设置试看：按课时设置可试看的前X分钟
+**教师功能**：
+- ✅ 创建课程（标题、描述、封面图）
+- ✅ 管理课程状态：草稿 ↔ 已发布
+- ✅ 添加章节（支持多个章节）
+- ✅ 添加课时（每个课时含视频）
+- ⚠️ 上传视频：平台内上传 → 腾讯云（当前为Mock）
+- ✅ 生成兑换码
 
-学生功能：
-- 购买/兑换课程
-- 观看视频（已购买的课程）
-- 试看未购买课程的前X分钟
+**学生功能**：
+- ✅ 购买/兑换课程
+- ✅ 观看视频（已购买的课程）
+- ✅ 查看课程进度
 
-### 2.3 兑换码系统
+### 2.3 管理员功能
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 用户管理 | 审批教师、禁用账号 | ✅ 已实现 |
+| 课程管理 | 查看所有课程 | ✅ 已实现 |
+| 数据统计 | 平台运营数据概览 | ❌ 待实现 |
+
+### 2.4 兑换码系统
+
+#### 状态定义
+
+| 状态 | 说明 |
+|------|------|
+| 待兑换 (PENDING) | 生成后等待兑换 |
+| 已兑换 (REDEEMED) | 已被用户使用 |
+| 已失效 (EXPIRED) | 超过有效期未兑换或关联课程被删除 |
+
+#### 状态流转
+
+```
+[生成] → 待兑换 → 已兑换
+              ↘ 已失效
+```
+
+#### 业务规则
 
 | 规则 | 说明 |
 |------|------|
-| 生成方式 | 教育者单个生成 |
+| 生成方式 | 教师后台生成或外部系统调用 API 接口生成 |
 | 格式 | 8位字母数字（如 `A1B2C3D4`） |
-| 兑换码有效期 | 教育者自定义（如30天） |
-| 课程权限期限 | 教育者自定义（如兑换后1年） |
+| 兑换码有效期 | 教师指定（如30天），必须在此之前兑换 |
 | 使用次数 | 一次性，兑换后失效 |
 | 绑定对象 | 绑定到用户账号 |
 
-### 2.4 闲鱼集成
+### 2.5 闲鱼集成
 
-| 规则 | 说明 |
-|------|------|
-| 商品形式 | 固定价格（不支持议价） |
-| 发货方式 | MVP 手动发货 |
-| 自动发货 | 后期接入 OpenClaw（MVP 排除） |
+| 规则 | 说明 | 状态 |
+|------|------|------|
+| 商品形式 | 固定价格（不支持议价） | ❌ 排除 |
+| 发货方式 | MVP 手动发货 | ✅ 已实现 |
+| 自动发货 | 后期接入 OpenClaw | ❌ 排除 |
 
 ---
 
@@ -65,211 +91,362 @@
 
 ### 3.1 技术栈
 
-| 层级 | 技术 | 备注 |
+#### 后端
+
+| 层级 | 技术 | 版本 |
 |------|------|------|
-| 前端 | Next.js 14+ (App Router) | React 框架 |
-| 后端 | Next.js API Routes | 服务端逻辑 |
-| 数据库 | PostgreSQL | 自建在 47.107.163.188 |
-| ORM | Prisma | 数据库操作 |
-| CSS | Tailwind CSS | 样式 |
-| 视频托管 | 腾讯云 VOD | 含自动转码 |
-| 视频防盗 | Referer 防盗链 | 免费、简单 |
+| 运行环境 | Java | 25 LTS |
+| Web 框架 | Spring Boot | 3.3.x |
+| ORM | Spring Data JPA | 6.x |
+| 数据库 | PostgreSQL | 15+ |
+| 认证 | JWT (jjwt) | 0.12.x |
+| 邮件 | Tencent Cloud Email | - |
+| 视频托管 | 腾讯云 VOD | - |
+
+#### 前端
+
+| 层级 | 技术 | 版本 |
+|------|------|------|
+| 框架 | Vue | 3.5.x |
+| 构建工具 | Vite | 6.x |
+| 语言 | TypeScript | 5.x |
+| UI 组件 | shadcn/ui | latest |
+| CSS | Tailwind CSS | 4.x |
+| 路由 | Vue Router | 4.x |
+| 状态管理 | Pinia | 2.x |
+| HTTP 客户端 | Axios | 1.x |
+| 类型校验 | Zod | 3.x |
 
 ### 3.2 项目结构
 
 ```
 esmile-edu/
-├── prisma/schema.prisma     # 数据库模型
-├── src/app/                 # Next.js 页面
-│   ├── (auth)/             # 登录、注册
-│   ├── (educator)/         # 教育者后台
-│   ├── (student)/          # 学生后台
-│   ├── (home)/             # 首页等公开页
-│   └── api/                # API 接口
-├── components/             # 通用组件
-├── lib/                    # 工具函数
-└── docs/specs/             # 需求文档
+├── docs/
+│   ├── specs/                          # 需求文档
+│   ├── backend/technical/              # 后端技术文档
+│   │   ├── 1-architecture/            # 架构设计
+│   │   ├── 2-modules/                 # 模块设计
+│   │   ├── 3-data-model/              # 数据模型
+│   │   ├── 4-api-specification/       # API 规范
+│   │   ├── 5-exception-handling/      # 异常处理
+│   │   ├── 6-infrastructure/           # 基础设施
+│   │   ├── 7-security/                # 安全规范
+│   │   ├── 8-development-standards/   # 开发规范
+│   │   └── 9-deployment/               # 部署指南
+│   └── frontend/technical/             # 前端技术文档
+│
+├── frontend/                           # Vue 3 前端
+│   └── src/
+│       ├── student/                    # 学生端
+│       │   ├── views/                  # 页面
+│       │   ├── components/             # 业务组件
+│       │   ├── api/                    # API 调用
+│       │   └── router/                 # 路由
+│       ├── teacher/                    # 教师端
+│       ├── admin/                      # 管理端
+│       └── common/                     # 公共组件
+│           ├── components/ui/           # shadcn/ui 组件
+│           ├── composables/             # 组合式函数
+│           ├── types/                  # 类型定义
+│           └── utils/                   # 工具函数
+│
+└── backend/                           # Spring Boot 后端 (单体分层架构)
+    └── src/main/java/com/esmile/edu/
+        ├── api/                        # Controller 层
+        │   ├── user/
+        │   ├── course/
+        │   ├── redeem/
+        │   └── video/
+        ├── biz/                        # 业务聚合层
+        │   ├── UserBizService.java
+        │   ├── CourseBizService.java
+        │   ├── RedeemBizService.java
+        │   └── VideoService.java
+        ├── module/                     # 数据模型层
+        │   ├── user/
+        │   ├── course/
+        │   ├── redeem/
+        │   └── auth/
+        ├── dto/                        # 数据传输对象
+        │   ├── request/
+        │   └── response/
+        └── common/                     # 公共组件
+            ├── auth/                   # 认证授权
+            ├── email/                  # 邮件服务
+            ├── exception/              # 异常定义
+            └── config/                 # 配置类
 ```
+
+### 3.3 分层架构
+
+**后端分层**：
+```
+api → biz → module → common
+```
+- **api**: HTTP 请求处理、参数校验
+- **biz**: 业务逻辑聚合、事务控制
+- **module**: 数据模型、Repository
+- **common**: 公共组件
+
+**前端分层**：
+```
+view → composable → store/api
+```
+- **view**: 页面渲染、用户交互
+- **composable**: 业务逻辑复用
+- **store**: 状态管理
+- **api**: 后端通信
 
 ---
 
 ## 4. 数据模型
 
-```prisma
-enum Role { EDUCATOR STUDENT }
-enum CourseStatus { DRAFT PUBLISHED }
-enum EnrollmentStatus { ACTIVE EXPIRED }
+### 4.1 枚举定义
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  nickname  String?
-  avatar    String?
-  role      Role     @default(STUDENT)
-  createdAt DateTime @default(now())
+| 枚举 | 值 | 说明 |
+|------|-----|------|
+| Role | STUDENT, TEACHER, ADMIN | 用户角色 |
+| UserStatus | ACTIVE, PENDING_APPROVAL, DISABLED | 用户状态 |
+| CourseStatus | DRAFT, PUBLISHED | 课程状态 |
+| EnrollmentStatus | ACTIVE, EXPIRED | 选课状态 |
+| RedeemCodeStatus | PENDING, USED, EXPIRED | 兑换码状态 |
+| LessonStatus | PROCESSING, READY, FAILED | 课时/视频状态 |
 
-  courses     Course[]
-  enrollments Enrollment[]
-  redeemedCodes RedeemCode[] @relation("RedeemedBy")
-}
+### 4.2 数据表
 
-model Course {
-  id          String       @id @default(uuid())
-  educatorId  String
-  title       String
-  description String?
-  coverImage  String?
-  status      CourseStatus @default(DRAFT)
-  createdAt   DateTime     @default(now())
+**users**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| email | VARCHAR(255) | 唯一邮箱 |
+| password | VARCHAR(255) | 加密密码 |
+| nickname | VARCHAR(100) | 昵称 |
+| avatar | VARCHAR(500) | 头像URL |
+| role | VARCHAR(20) | STUDENT/TEACHER/ADMIN |
+| status | VARCHAR(20) | ACTIVE/PENDING_APPROVAL/DISABLED |
+| disabled_at | TIMESTAMP | 禁用时间 |
+| disable_reason | VARCHAR(500) | 禁用原因 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
 
-  educator    User         @relation(fields: [educatorId], references: [id])
-  chapters    Chapter[]
-  enrollments Enrollment[]
-  redeemCodes RedeemCode[]
-}
+**courses**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| educator_id | BIGINT | 教师ID |
+| title | VARCHAR(200) | 课程标题 |
+| description | TEXT | 课程描述 |
+| cover_image | VARCHAR(500) | 封面图URL |
+| status | VARCHAR(20) | DRAFT/PUBLISHED |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
 
-model Chapter {
-  id        String @id @default(uuid())
-  courseId  String
-  title     String
-  order     Int
+**chapters**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| course_id | BIGINT | 课程ID |
+| title | VARCHAR(200) | 章节标题 |
+| order_num | INT | 排序 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
 
-  course  Course   @relation(fields: [courseId], references: [id])
-  lessons Lesson[]
-}
+**lessons**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| chapter_id | BIGINT | 章节ID |
+| title | VARCHAR(200) | 课时标题 |
+| video_url | VARCHAR(500) | 腾讯云VOD播放地址 |
+| video_id | VARCHAR(100) | 腾讯云VOD videoId |
+| duration | INT | 视频时长（秒） |
+| status | VARCHAR(20) | PROCESSING/READY/FAILED |
+| order_num | INT | 排序 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
 
-model Lesson {
-  id             String  @id @default(uuid())
-  chapterId      String
-  title          String
-  videoUrl       String? # 腾讯云 VOD 播放地址
-  videoId        String? # 腾讯云 VOD videoId
-  duration       Int?    # 视频时长（秒）
-  previewSeconds Int?    # 试看秒数
-  order          Int
+**enrollments**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| user_id | BIGINT | 用户ID |
+| course_id | BIGINT | 课程ID |
+| status | VARCHAR(20) | ACTIVE/EXPIRED |
+| expires_at | TIMESTAMP | 权限到期时间 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
 
-  chapter Chapter @relation(fields: [chapterId], references: [id])
-}
+**redeem_codes**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| code | VARCHAR(20) | 8位兑换码 |
+| course_id | BIGINT | 课程ID |
+| created_by | BIGINT | 创建者ID（教师） |
+| status | VARCHAR(20) | PENDING/USED/EXPIRED |
+| used_by | BIGINT | 使用者ID |
+| used_at | TIMESTAMP | 使用时间 |
+| expires_at | TIMESTAMP | 兑换码有效期 |
+| course_expires_at | TIMESTAMP | 兑换后课程权限期限 |
+| created_at | TIMESTAMP | 创建时间 |
 
-model Enrollment {
-  id        String            @id @default(uuid())
-  userId    String
-  courseId  String
-  status    EnrollmentStatus  @default(ACTIVE)
-  expiresAt DateTime?         # 课程权限到期时间
-  createdAt DateTime          @default(now())
-
-  user   User   @relation(fields: [userId], references: [id])
-  course Course @relation(fields: [courseId], references: [id])
-}
-
-model RedeemCode {
-  id               String    @id @default(uuid())
-  code             String    @unique
-  courseId         String
-  usedBy           String?
-  usedAt           DateTime?
-  expiresAt        DateTime? # 兑换码有效期
-  courseExpiresAt  DateTime? # 兑换后课程权限期限
-  createdAt        DateTime  @default(now())
-
-  course   Course @relation(fields: [courseId], references: [id])
-  redeemer User?  @relation("RedeemedBy", fields: [usedBy], references: [id])
-}
-```
+**verification_codes**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGSERIAL | 主键 |
+| email | VARCHAR(255) | 邮箱 |
+| code | VARCHAR(10) | 验证码 |
+| role | VARCHAR(20) | 用户角色 |
+| expires_at | TIMESTAMP | 过期时间 |
+| used_at | TIMESTAMP | 使用时间 |
+| created_at | TIMESTAMP | 创建时间 |
 
 ---
 
 ## 5. API 设计
 
-### 认证
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/auth/send-code` | 发送邮箱验证码 |
-| POST | `/api/auth/verify-code` | 验证并登录 |
-| GET | `/api/auth/me` | 获取当前用户 |
+### 5.1 统一响应格式
 
-### 课程
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/courses` | 课程列表 |
-| POST | `/api/courses` | 创建课程 |
-| GET | `/api/courses/[id]` | 课程详情 |
-| PUT | `/api/courses/[id]` | 更新课程 |
-| PUT | `/api/courses/[id]/publish` | 发布课程 |
-| DELETE | `/api/courses/[id]` | 删除课程 |
+```json
+{
+  "code": 200,
+  "message": "Success",
+  "data": { ... }
+}
+```
 
-### 章节
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/courses/[id]/chapters` | 章节列表 |
-| POST | `/api/courses/[id]/chapters` | 创建章节 |
-| PUT | `/api/chapters/[id]` | 更新章节 |
-| DELETE | `/api/chapters/[id]` | 删除章节 |
+**状态码**：
+| HTTP Status | 说明 |
+|-------------|------|
+| 200 | 成功 |
+| 201 | 创建成功 |
+| 204 | 删除成功（无内容） |
+| 400 | 请求参数错误 |
+| 401 | 未认证 |
+| 403 | 无权限 |
+| 404 | 资源不存在 |
+| 500 | 服务器错误 |
 
-### 课时
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/chapters/[id]/lessons` | 课时列表 |
-| POST | `/api/chapters/[id]/lessons` | 创建课时 |
-| PUT | `/api/lessons/[id]` | 更新课时（含试看设置） |
-| DELETE | `/api/lessons/[id]` | 删除课时 |
+### 5.2 学生 API (`/api/v1/student/*`)
 
-### 兑换码
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/codes` | 兑换码列表 |
-| POST | `/api/codes` | 生成兑换码 |
-| POST | `/api/codes/redeem` | 兑换课程 |
+| POST | `/student/auth/send-code` | 发送邮箱验证码 |
+| POST | `/student/auth/verify-code` | 验证并登录 |
+| GET | `/student/auth/me` | 获取当前用户 |
+| GET | `/student/courses` | 课程列表（分页） |
+| GET | `/student/courses/{id}` | 课程详情（含章节课时） |
+| POST | `/student/redeem` | 兑换课程 |
+| GET | `/student/my-courses` | 我的课程（已购） |
 
-### 视频上传
+### 5.3 教师 API (`/api/v1/teacher/*`)
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/video/apply-upload` | 申请上传 |
-| POST | `/api/video/commit-upload` | 确认上传完成 |
+| POST | `/teacher/auth/send-code` | 发送邮箱验证码 |
+| POST | `/teacher/auth/verify-code` | 验证并登录 |
+| GET | `/teacher/auth/me` | 获取当前用户 |
+| GET | `/teacher/my-courses` | 我的课程列表 |
+| POST | `/teacher/courses` | 创建课程 |
+| GET | `/teacher/courses/{id}` | 课程详情 |
+| PUT | `/teacher/courses/{id}` | 更新课程 |
+| DELETE | `/teacher/courses/{id}` | 删除课程 |
+| POST | `/teacher/courses/{id}/publish` | 发布课程 |
+| POST | `/teacher/chapters` | 创建章节 |
+| PUT | `/teacher/chapters/{id}` | 更新章节 |
+| DELETE | `/teacher/chapters/{id}` | 删除章节 |
+| POST | `/teacher/lessons` | 创建课时 |
+| PUT | `/teacher/lessons/{id}` | 更新课时 |
+| DELETE | `/teacher/lessons/{id}` | 删除课时 |
+| GET | `/teacher/video/apply-upload` | 申请视频上传 |
+| POST | `/teacher/video/commit-upload` | 确认视频上传完成 |
+
+### 5.4 管理员 API (`/api/v1/admin/*`)
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/admin/users` | 用户列表（支持角色/状态筛选） |
+| PUT | `/admin/users/{id}/approve` | 审批教师 |
+| PUT | `/admin/users/{id}/status` | 更新用户状态（禁用/启用） |
+
+### 5.5 外部系统 API (`/api/v1/*`)
+
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| POST | `/redeem-codes/apply` | 批量生成兑换码 | API Key |
+
+### 5.6 视频上传流程
+
+```
+1. 教师调用 GET /teacher/video/apply-upload?fileName=xxx&fileSize=123
+2. 服务端返回 videoId、signature、uploadUrl
+3. 教师上传视频到 uploadUrl
+4. 教师调用 POST /teacher/video/commit-upload 确认完成
+5. 服务端更新课时状态为 READY
+```
 
 ---
 
-## 6. 页面结构
+## 6. 前端页面结构
 
-### 公开页面
+### 6.1 学生端 (`/student/*`)
+
 | 路径 | 功能 |
 |------|------|
-| `/` | 首页 |
-| `/login` | 登录 |
-| `/register` | 注册 |
+| `/student/login` | 登录（发送验证码） |
+| `/student/send-code` | 填写邮箱获取验证码 |
+| `/student/courses` | 课程列表 |
+| `/student/courses/:id` | 课程详情（章节、课时列表） |
+| `/student/my-courses` | 已购课程列表 |
+| `/student/my-courses/:id` | 继续学习（跳转至上次播放位置） |
+| `/student/redeem` | 兑换课程 |
 
-### 教育者端
+### 6.2 教师端 (`/teacher/*`)
+
 | 路径 | 功能 |
 |------|------|
-| `/educator/dashboard` | 数据概览 |
-| `/educator/courses` | 课程列表 |
-| `/educator/courses/new` | 创建课程 |
-| `/educator/courses/[id]` | 课程详情/编辑 |
-| `/educator/codes` | 兑换码管理 |
+| `/teacher/login` | 登录（发送验证码） |
+| `/teacher/send-code` | 填写邮箱获取验证码 |
+| `/teacher/courses` | 我的课程列表 |
+| `/teacher/courses/new` | 创建课程 |
+| `/teacher/courses/:id/edit` | 编辑课程 |
+| `/teacher/courses/:id/chapters` | 管理章节和课时 |
+| `/teacher/courses/:id/video` | 上传视频 |
 
-### 学生端
+### 6.3 管理端 (`/admin/*`)
+
 | 路径 | 功能 |
 |------|------|
-| `/student/dashboard` | 学习概览 |
-| `/student/courses` | 我的课程 |
-| `/student/courses/[id]` | 课程详情 |
-| `/student/courses/[id]/learn/[lessonId]` | 课时学习 |
-| `/redeem` | 兑换课程 |
+| `/admin/login` | 管理员登录 |
+| `/admin/users` | 用户管理（筛选教师/学生） |
+| `/admin/users/:id` | 用户详情/审批教师 |
 
 ---
 
 ## 7. 验收标准
 
-- [ ] 用户可通过邮箱+验证码登录/注册
-- [ ] 教育者可创建课程（草稿/发布）
-- [ ] 教育者可添加章节和课时
-- [ ] 教育者可上传视频并设置试看时长
-- [ ] 教育者可生成单个兑换码
-- [ ] 学生可输入兑换码兑换课程
-- [ ] 学生可观看已兑换课程的视频
-- [ ] 未购买用户可试看视频前X分钟
-- [ ] 兑换码一次性使用，兑换后失效
+### 7.1 已完成
+
+- [x] 学生可通过邮箱+验证码登录/注册
+- [x] 教师可通过邮箱+验证码注册（需管理员审批）
+- [x] 管理员可审批教师注册申请
+- [x] 教师可创建课程（草稿/发布）
+- [x] 教师可添加章节和课时
+- [x] 教师可上传视频（Mock模式）
+- [x] 教师可生成兑换码
+- [x] 学生可输入兑换码兑换课程
+- [x] 学生可观看已兑换课程的视频
+- [x] 兑换码一次性使用，兑换后失效
+- [x] 管理员可管理用户状态（禁用/启用）
+- [x] 安全认证：IDOR漏洞已修复
+- [x] 安全认证：管理员接口授权校验已添加
+
+### 7.2 待完成
+
+- [ ] 管理员可查看数据统计
+- [ ] 视频上传真实腾讯云集成
+- [ ] 邮件发送真实集成（当前为Mock）
+- [ ] 生产环境配置优化（JWT密钥、API Key）
 
 ---
 
@@ -281,11 +458,27 @@ model RedeemCode {
 - OpenClaw 自动发货
 - Key 防盗链
 - 学习路径
+- 数据统计
+- 微信/支付宝支付
 
 ---
 
-## 9. 待确认
+## 9. Production-Ready 任务清单
 
-- [ ] 腾讯云 VOD 控制台配置（防盗链、域名）
-- [ ] 服务器 PostgreSQL 安装配置
-- [ ] 邮件服务配置（发送验证码）
+详见: [后端 Production-Ready 任务清单](../backend/production-readiness-tasks.md)
+
+**已完成**: 7/20
+**待完成**: 13/20
+
+---
+
+## 10. 文档索引
+
+| 文档 | 路径 |
+|------|------|
+| 后端架构设计 | [docs/backend/technical/1-architecture/README.md](../backend/technical/1-architecture/README.md) |
+| 后端模块设计 | [docs/backend/technical/2-modules/README.md](../backend/technical/2-modules/README.md) |
+| 后端 API 规范 | [docs/backend/technical/4-api-specification/README.md](../backend/technical/4-api-specification/) |
+| 前端架构设计 | [docs/frontend/technical/1-architecture/README.md](../frontend/technical/1-architecture/README.md) |
+| 前端组件设计 | [docs/frontend/technical/5-components/README.md](../frontend/technical/5-components/README.md) |
+| 前端 API 客户端 | [docs/frontend/technical/4-api-client/README.md](../frontend/technical/4-api-client/README.md) |
