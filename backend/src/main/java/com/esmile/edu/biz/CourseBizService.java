@@ -110,7 +110,11 @@ public class CourseBizService {
     @Transactional(readOnly = true)
     public Page<CourseResponse> listCourses(Pageable pageable) {
         return courseRepository.findByStatus(CourseStatus.PUBLISHED, pageable)
-            .map(CourseResponse::from);
+            .map(course -> CourseResponse.from(
+                course,
+                (int) chapterRepository.countByCourseId(course.getId()),
+                (int) lessonRepository.countByCourseId(course.getId())
+            ));
     }
 
     @Transactional(readOnly = true)

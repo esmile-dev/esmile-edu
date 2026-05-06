@@ -7,4 +7,5 @@ import java.util.List;
 @Repository
 public interface ChapterRepository extends JpaRepository<ChapterEntity, Long> {
     List<ChapterEntity> findByCourseIdOrderByPosition(Long courseId);
+    long countByCourseId(Long courseId);
 }

@@ -10,4 +10,5 @@ public interface LessonRepository extends JpaRepository<LessonEntity, Long> {
     List<LessonEntity> findByCourseIdOrderByPosition(Long courseId);
     List<LessonEntity> findByChapterIdOrderByPosition(Long chapterId);
     Optional<LessonEntity> findByVideoId(String videoId);
+    long countByCourseId(Long courseId);
 }

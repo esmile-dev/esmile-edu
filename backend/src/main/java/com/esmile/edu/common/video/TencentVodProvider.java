@@ -39,7 +39,7 @@ import java.util.Random;
  * tencent.vod.secret-key=${TENCENT_VOD_SECRET_KEY}
  * </pre>
  */
-@Component
+@Component("tencentVideoProvider")
 @ConditionalOnProperty(name = "video.provider", havingValue = "tencent")
 public class TencentVodProvider implements VideoStoragePort {
 
