@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { studentApi } from '@/student/api/studentApi'
 import type { CourseDetail, Lesson } from '@/common/types/api'
@@ -18,6 +18,9 @@ const currentLesson = ref<Lesson | null>(null)
 const loading = ref(true)
 const error = ref('')
 const videoError = ref('')
+const playbackUrl = ref<string | null>(null)
+const watermarkText = ref<string | null>(null)
+const appId = ref<number>(1408936978)
 
 onMounted(async () => {
   try {
@@ -34,12 +37,33 @@ onMounted(async () => {
     if (!currentLesson.value && course.value?.chapters?.[0]?.lessons?.[0]) {
       currentLesson.value = course.value.chapters[0].lessons[0]
     }
+    // Load video after setting currentLesson
+    await loadVideo()
   } catch (err: any) {
     error.value = err.message || '加载失败'
   } finally {
     loading.value = false
   }
 })
+
+async function loadVideo() {
+  if (!currentLesson.value?.videoId) {
+    playbackUrl.value = null
+    watermarkText.value = null
+    return
+  }
+
+  try {
+    const response = await studentApi.getPlaybackUrl(currentLesson.value.videoId)
+    playbackUrl.value = response.playbackUrl
+    watermarkText.value = response.watermarkText
+    videoError.value = ''
+  } catch (err: any) {
+    videoError.value = err.message || '无法加载视频，请确认已购买该课程'
+    playbackUrl.value = null
+    watermarkText.value = null
+  }
+}
 
 function handleVideoError(err: Error) {
   videoError.value = err.message
@@ -67,6 +91,12 @@ function getPrevLesson(): Lesson | null {
   const currentIndex = lessons.findIndex(l => l.id === currentLesson.value?.id)
   return currentIndex > 0 ? lessons[currentIndex - 1] : null
 }
+
+watch(() => currentLesson.value?.id, async (newLessonId) => {
+  if (newLessonId) {
+    await loadVideo()
+  }
+})
 </script>
 
 <template>
@@ -91,8 +121,11 @@ function getPrevLesson(): Lesson | null {
         <!-- Video Area -->
         <div class="bg-black">
           <VideoPlayer
-            v-if="currentLesson?.videoUrl && currentLesson?.status === 'READY'"
-            :video-url="currentLesson.videoUrl"
+            v-if="currentLesson?.videoId && playbackUrl && currentLesson?.status === 'READY'"
+            :video-id="currentLesson.videoId"
+            :playback-url="playbackUrl"
+            :watermark-text="watermarkText"
+            :app-id="appId"
             @error="handleVideoError"
           />
           <div v-else class="w-full aspect-video flex items-center justify-center text-white">
