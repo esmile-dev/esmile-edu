@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { studentApi } from '@/student/api/studentApi'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 
 export type VideoProvider = 'native' | 'tcplayer'
 
@@ -18,6 +17,8 @@ export interface VideoPlayerProps {
   videoUrl?: string
   /** VOD video ID (requires backend to generate playback URL) */
   videoId?: string
+  /** Signed playback URL from backend (for tcplayer) */
+  playbackUrl?: string
   /** Poster image URL */
   poster?: string
   /** Autoplay on load */
@@ -30,6 +31,10 @@ export interface VideoPlayerProps {
   provider?: VideoProvider | 'auto'
   /** Initial playback time */
   startTime?: number
+  /** Watermark text for dynamic watermark */
+  watermarkText?: string
+  /** TCPlayer appId */
+  appId?: string | number
 }
 
 const props = withDefaults(defineProps<VideoPlayerProps>(), {
@@ -37,7 +42,8 @@ const props = withDefaults(defineProps<VideoPlayerProps>(), {
   muted: false,
   controls: true,
   provider: 'auto',
-  startTime: 0
+  startTime: 0,
+  appId: 1408936978
 })
 
 const emit = defineEmits<VideoPlayerEmits>()
@@ -49,38 +55,99 @@ const currentTime = ref(0)
 const duration = ref(0)
 const error = ref<Error | null>(null)
 const isLoading = ref(true)
-const playbackUrl = ref<string | null>(null)
+
+let playerInstance: any = null
 
 const effectiveProvider = computed<VideoProvider>(() => {
   if (props.provider !== 'auto') return props.provider
-  if (props.videoUrl?.includes('vod') || props.videoId) return 'tcplayer'
+  // If we have videoId and a source URL, use tcplayer for VOD
+  if (props.videoId && videoSrc.value) return 'tcplayer'
+  // Direct MP4 URLs use native
+  if (props.videoUrl?.includes('.mp4')) return 'native'
   return 'native'
 })
 
 const videoSrc = computed(() => {
+  if (props.playbackUrl) return props.playbackUrl
   if (props.videoUrl) return props.videoUrl
-  if (playbackUrl.value) return playbackUrl.value
   return undefined
 })
 
-watch(() => props.videoId, async (newVideoId) => {
-  if (!newVideoId) {
-    playbackUrl.value = null
+watch([() => effectiveProvider.value, () => props.videoId, videoSrc], ([provider, videoId, src]) => {
+  if (provider === 'tcplayer' && videoId && src) {
+    nextTick(initTCPlayer)
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (playerInstance) {
+    playerInstance.dispose()
+    playerInstance = null
+  }
+})
+
+function initTCPlayer() {
+  if (!videoRef.value || !props.videoId) return
+
+  // Check if TCPlayer is available
+  if (typeof (window as any).TCPlayer !== 'function') {
+    console.error('TCPlayer not loaded')
+    error.value = new Error('Video player not available')
     isLoading.value = false
     return
   }
 
-  isLoading.value = true
-  try {
-    const response = await studentApi.getPlaybackUrl(newVideoId)
-    playbackUrl.value = response.playbackUrl
-  } catch (err) {
-    console.error('Failed to get playback URL:', err)
-    emit('error', err as Error)
-  } finally {
-    isLoading.value = false
+  // Destroy existing instance
+  if (playerInstance) {
+    playerInstance.dispose()
+    playerInstance = null
   }
-}, { immediate: true })
+
+  const options: Record<string, any> = {
+    appID: Number(props.appId) || 1408936978,
+    fileID: props.videoId,
+    sources: videoSrc.value ? [{ src: videoSrc.value, type: 'video/mp4' }] : undefined,
+    autoplay: props.autoplay,
+    muted: props.muted,
+    controls: props.controls,
+    poster: props.poster,
+    volume: 0,
+    plugins: {
+      DynamicWatermark: {
+        type: 'text',
+        content: [props.watermarkText || ''],
+        speed: 0.5,
+        opacity: 0.7,
+        fontSize: 16,
+        color: '#ffffff',
+        position: 'left'
+      }
+    }
+  }
+
+  playerInstance = (window as any).TCPlayer(videoRef.value, options)
+
+  playerInstance.on('ready', () => {
+    isReady.value = true
+    isLoading.value = false
+    emit('ready')
+  })
+
+  playerInstance.on('play', handlePlay)
+  playerInstance.on('pause', handlePause)
+  playerInstance.on('ended', handleEnded)
+  playerInstance.on('timeupdate', () => {
+    if (playerInstance) {
+      currentTime.value = playerInstance.currentTime()
+      emit('timeupdate', currentTime.value)
+    }
+  })
+  playerInstance.on('error', (e: any) => {
+    const err = new Error('Video playback error')
+    error.value = err
+    emit('error', err)
+  })
+}
 
 function handleLoadedMetadata() {
   if (videoRef.value) {
@@ -123,21 +190,31 @@ function handleError(e: Event) {
 }
 
 function play() {
-  videoRef.value?.play()
+  if (playerInstance) {
+    playerInstance.play()
+  } else {
+    videoRef.value?.play()
+  }
 }
 
 function pause() {
-  videoRef.value?.pause()
+  if (playerInstance) {
+    playerInstance.pause()
+  } else {
+    videoRef.value?.pause()
+  }
 }
 
 function seek(time: number) {
-  if (videoRef.value) {
+  if (playerInstance) {
+    playerInstance.currentTime(time)
+  } else if (videoRef.value) {
     videoRef.value.currentTime = time
   }
 }
 
 function getPlayerInstance() {
-  return videoRef.value
+  return playerInstance || videoRef.value
 }
 
 defineExpose({
