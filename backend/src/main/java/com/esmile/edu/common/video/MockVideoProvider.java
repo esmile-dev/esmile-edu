@@ -99,7 +99,7 @@ public class MockVideoProvider implements VideoStoragePort {
     public VideoPlaybackResponse getPlaybackUrlWithSign(String videoId) {
         log.info("[MOCK VIDEO] Get signed playback URL: videoId={}", videoId);
         String playbackUrl = String.format(PLAYBACK_URL_TEMPLATE, videoId);
-        return new VideoPlaybackResponse(playbackUrl, null, null);
+        return new VideoPlaybackResponse(playbackUrl, null, null, null);
     }
 
     @Override

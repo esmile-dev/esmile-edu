@@ -214,7 +214,7 @@ public class TencentVodProvider implements VideoStoragePort {
             Integer duration = getDuration(mediaInfo);
             String coverImage = getCoverImage(mediaInfo);
 
-            return new VideoPlaybackResponse(signedUrl, duration, coverImage);
+            return new VideoPlaybackResponse(signedUrl, duration, coverImage, null);
         } catch (VideoUploadFailedException e) {
             throw e;
         } catch (Exception e) {
