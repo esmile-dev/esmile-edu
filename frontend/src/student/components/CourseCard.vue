@@ -27,7 +27,7 @@ defineProps<{
           <h3 class="font-semibold line-clamp-2">{{ course.title }}</h3>
         </div>
         <p class="text-sm text-muted-foreground mt-1">
-          {{ course.educatorName || course.educator?.nickname || '未知讲师' }} · {{ course.chapterCount || 0 }} 章节 · {{ course.lessonCount || 0 }} 课时
+          {{ course.educatorName || '未知讲师' }} · {{ course.chapterCount || 0 }} 章节 · {{ course.lessonCount || 0 }} 课时
         </p>
       </CardContent>
     </Card>

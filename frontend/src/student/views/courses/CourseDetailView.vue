@@ -123,12 +123,17 @@ function getInitials(name: string) {
                 <!-- Instructor -->
                 <div class="flex items-center gap-3">
                   <Avatar>
+                    <AvatarImage
+                      v-if="course.educatorAvatar"
+                      :src="course.educatorAvatar"
+                      :alt="course.educatorName"
+                    />
                     <AvatarFallback class="bg-primary text-primary-foreground">
-                      {{ getInitials(course.educator?.nickname || 'T') }}
+                      {{ getInitials(course.educatorName || 'T') }}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p class="font-medium">{{ course.educator?.nickname }}</p>
+                    <p class="font-medium">{{ course.educatorName }}</p>
                     <p class="text-sm text-muted-foreground">讲师</p>
                   </div>
                 </div>

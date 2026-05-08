@@ -54,6 +54,11 @@ function getInitials(name: string) {
           <DropdownMenuTrigger as-child>
             <Button variant="ghost" class="relative h-10 w-10 rounded-full">
               <Avatar>
+                <AvatarImage
+                  v-if="authStore.user?.avatar"
+                  :src="authStore.user.avatar"
+                  :alt="authStore.user.nickname"
+                />
                 <AvatarFallback class="bg-primary text-primary-foreground">
                   {{ getInitials(authStore.user?.nickname || 'T') }}
                 </AvatarFallback>

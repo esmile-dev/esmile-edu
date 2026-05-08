@@ -10,17 +10,21 @@ public record CourseDetailResponse(
     String title,
     String description,
     Long educatorId,
+    String educatorName,
+    String educatorAvatar,
     String cover,
     CourseStatus status,
     LocalDateTime publishedAt,
     List<ChapterResponse> chapters
 ) {
-    public static CourseDetailResponse from(CourseEntity entity, List<ChapterResponse> chapters) {
+    public static CourseDetailResponse from(CourseEntity entity, String educatorName, String educatorAvatar, List<ChapterResponse> chapters) {
         return new CourseDetailResponse(
             entity.getId(),
             entity.getTitle(),
             entity.getDescription(),
             entity.getEducatorId(),
+            educatorName,
+            educatorAvatar,
             entity.getCover(),
             entity.getStatus(),
             entity.getPublishedAt(),

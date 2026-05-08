@@ -11,6 +11,7 @@ public record CourseResponse(
     String title,
     String description,
     Long educatorId,
+    String educatorName,
     String cover,
     CourseStatus status,
     LocalDateTime createdAt,
@@ -18,12 +19,13 @@ public record CourseResponse(
     int chapterCount,
     int lessonCount
 ) {
-    public static CourseResponse from(CourseEntity entity) {
+    public static CourseResponse from(CourseEntity entity, String educatorName) {
         return new CourseResponse(
             entity.getId(),
             entity.getTitle(),
             entity.getDescription(),
             entity.getEducatorId(),
+            educatorName,
             entity.getCover(),
             entity.getStatus(),
             entity.getCreatedAt(),
@@ -33,12 +35,13 @@ public record CourseResponse(
         );
     }
 
-    public static CourseResponse from(CourseEntity entity, int chapterCount, int lessonCount) {
+    public static CourseResponse from(CourseEntity entity, String educatorName, int chapterCount, int lessonCount) {
         return new CourseResponse(
             entity.getId(),
             entity.getTitle(),
             entity.getDescription(),
             entity.getEducatorId(),
+            educatorName,
             entity.getCover(),
             entity.getStatus(),
             entity.getCreatedAt(),
@@ -48,12 +51,13 @@ public record CourseResponse(
         );
     }
 
-    public static CourseResponse from(CourseEntity entity, List<ChapterResponse> chapters) {
+    public static CourseResponse from(CourseEntity entity, String educatorName, List<ChapterResponse> chapters) {
         return new CourseResponse(
             entity.getId(),
             entity.getTitle(),
             entity.getDescription(),
             entity.getEducatorId(),
+            educatorName,
             entity.getCover(),
             entity.getStatus(),
             entity.getCreatedAt(),

@@ -45,8 +45,9 @@ export interface Course {
   title: string
   description: string | null
   cover: string | null
+  educatorId?: number
   educatorName?: string
-  educator?: UserSummary
+  educatorAvatar?: string | null
   status?: CourseStatus
   chapterCount?: number
   lessonCount?: number
@@ -76,7 +77,6 @@ export interface Lesson {
 }
 
 export interface CourseDetail extends Course {
-  educator: UserSummary
   chapters: Chapter[]
   enrollmentStatus: EnrollmentStatus | null
   enrollmentExpiresAt: string | null

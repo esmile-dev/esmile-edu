@@ -15,6 +15,7 @@ import com.esmile.edu.dto.request.UpdateCourseRequest;
 import com.esmile.edu.dto.request.UpdateLessonRequest;
 import com.esmile.edu.dto.response.*;
 import com.esmile.edu.module.course.*;
+import com.esmile.edu.module.user.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,16 +29,31 @@ public class CourseBizService {
     private final ChapterRepository chapterRepository;
     private final LessonRepository lessonRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final UserRepository userRepository;
 
     public CourseBizService(
             CourseRepository courseRepository,
             ChapterRepository chapterRepository,
             LessonRepository lessonRepository,
-            EnrollmentRepository enrollmentRepository) {
+            EnrollmentRepository enrollmentRepository,
+            UserRepository userRepository) {
         this.courseRepository = courseRepository;
         this.chapterRepository = chapterRepository;
         this.lessonRepository = lessonRepository;
         this.enrollmentRepository = enrollmentRepository;
+        this.userRepository = userRepository;
+    }
+
+    private record EducatorInfo(String name, String avatar) {}
+
+    private EducatorInfo getEducatorInfo(Long educatorId) {
+        return userRepository.findById(educatorId)
+            .map(u -> new EducatorInfo(u.getNickname(), u.getAvatar()))
+            .orElse(new EducatorInfo("未知讲师", null));
+    }
+
+    private String getEducatorName(Long educatorId) {
+        return getEducatorInfo(educatorId).name();
     }
 
     @Transactional
@@ -48,7 +64,7 @@ public class CourseBizService {
             educatorId,
             request.cover()
         );
-        return CourseResponse.from(courseRepository.save(course));
+        return CourseResponse.from(courseRepository.save(course), getEducatorName(educatorId));
     }
 
     @Transactional
@@ -59,7 +75,7 @@ public class CourseBizService {
             throw new InsufficientPermissionsException("无权限操作此课程");
         }
         course.publish();
-        return CourseResponse.from(courseRepository.save(course));
+        return CourseResponse.from(courseRepository.save(course), getEducatorName(educatorId));
     }
 
     @Transactional(readOnly = true)
@@ -73,7 +89,7 @@ public class CourseBizService {
                 return ChapterResponse.from(ch, lessons.stream().map(LessonResponse::from).toList());
             })
             .toList();
-        return CourseResponse.from(course, chapterResponses);
+        return CourseResponse.from(course, getEducatorName(course.getEducatorId()), chapterResponses);
     }
 
     @Transactional
@@ -83,7 +99,7 @@ public class CourseBizService {
         course.setTitle(request.title());
         course.setDescription(request.description());
         course.setCover(request.cover());
-        return CourseResponse.from(courseRepository.save(course));
+        return CourseResponse.from(courseRepository.save(course), getEducatorName(educatorId));
     }
 
     @Transactional
@@ -104,7 +120,8 @@ public class CourseBizService {
                 return ChapterResponse.from(ch, lessons.stream().map(LessonResponse::from).toList());
             })
             .toList();
-        return CourseDetailResponse.from(course, chapterResponses);
+        EducatorInfo educatorInfo = getEducatorInfo(course.getEducatorId());
+        return CourseDetailResponse.from(course, educatorInfo.name(), educatorInfo.avatar(), chapterResponses);
     }
 
     @Transactional(readOnly = true)
@@ -112,6 +129,7 @@ public class CourseBizService {
         return courseRepository.findByStatus(CourseStatus.PUBLISHED, pageable)
             .map(course -> CourseResponse.from(
                 course,
+                getEducatorName(course.getEducatorId()),
                 (int) chapterRepository.countByCourseId(course.getId()),
                 (int) lessonRepository.countByCourseId(course.getId())
             ));
@@ -119,8 +137,9 @@ public class CourseBizService {
 
     @Transactional(readOnly = true)
     public Page<CourseResponse> listCoursesByEducator(Long educatorId, Pageable pageable) {
+        String educatorName = getEducatorName(educatorId);
         return courseRepository.findByEducatorId(educatorId, pageable)
-            .map(CourseResponse::from);
+            .map(course -> CourseResponse.from(course, educatorName));
     }
 
     @Transactional
@@ -228,8 +247,15 @@ public class CourseBizService {
             return List.of();
         }
 
-        // 2. Batch query courses (single query instead of N queries)
+        // 2. Batch query courses and educators (single query instead of N queries)
         List<CourseEntity> courses = courseRepository.findByIdIn(courseIds);
+        List<Long> educatorIds = courses.stream().map(CourseEntity::getEducatorId).distinct().toList();
+        List<Object[]> educatorRows = userRepository.findNicknamesByIds(educatorIds);
+        java.util.Map<Long, String> educatorNameMap = educatorRows.stream()
+            .collect(java.util.stream.Collectors.toMap(
+                row -> (Long) row[0],
+                row -> (String) row[1]
+            ));
 
         // 3. Maintain original order
         return courseIds.stream()
@@ -238,7 +264,7 @@ public class CourseBizService {
                 .findFirst()
                 .orElse(null))
             .filter(c -> c != null)
-            .map(CourseResponse::from)
+            .map(c -> CourseResponse.from(c, educatorNameMap.getOrDefault(c.getEducatorId(), "未知讲师")))
             .toList();
     }
 }
