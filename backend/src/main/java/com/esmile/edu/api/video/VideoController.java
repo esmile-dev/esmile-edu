@@ -3,6 +3,7 @@ package com.esmile.edu.api.video;
 import com.esmile.edu.biz.VideoService;
 import com.esmile.edu.common.ApiResponse;
 import com.esmile.edu.common.auth.AuthContext;
+import com.esmile.edu.common.auth.RequireAuth;
 import com.esmile.edu.common.auth.RequireRole;
 import com.esmile.edu.dto.request.CommitUploadRequest;
 import com.esmile.edu.dto.response.LessonResponse;
@@ -56,6 +57,7 @@ public class VideoController {
      * GET /video/playback-url/{videoId}
      */
     @GetMapping("/video/playback-url/{videoId}")
+    @RequireAuth
     public ApiResponse<VideoPlaybackResponse> getPlaybackUrl(@PathVariable String videoId) {
         VideoPlaybackResponse response = videoService.getPlaybackUrl(
             videoId,

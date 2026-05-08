@@ -9,10 +9,11 @@ import type {
   PageResponse,
 } from '@/common/types/api'
 
-export interface VideoPlaybackUrl {
+export interface VideoPlaybackData {
   playbackUrl: string
-  duration: number
-  coverImage?: string
+  duration: number | null
+  coverImage: string | null
+  watermarkText: string | null
 }
 
 export const studentApi = {
@@ -48,8 +49,8 @@ export const studentApi = {
   },
 
   // Video
-  async getPlaybackUrl(videoId: string): Promise<VideoPlaybackUrl> {
-    return apiClient.get<VideoPlaybackUrl>(`/video/playback-url/${videoId}`)
+  async getPlaybackUrl(videoId: string): Promise<VideoPlaybackData> {
+    return apiClient.get<VideoPlaybackData>(`/video/playback-url/${videoId}`)
   },
 
   // My Courses

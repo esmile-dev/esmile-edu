@@ -10,6 +10,8 @@ import com.esmile.edu.module.course.EnrollmentRepository;
 import com.esmile.edu.module.course.EnrollmentStatus;
 import com.esmile.edu.module.course.LessonEntity;
 import com.esmile.edu.module.course.LessonRepository;
+import com.esmile.edu.module.user.UserEntity;
+import com.esmile.edu.module.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,15 +29,18 @@ public class VideoService {
     private final VideoServiceFactory videoServiceFactory;
     private final LessonRepository lessonRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final UserRepository userRepository;
 
     public VideoService(
         VideoServiceFactory videoServiceFactory,
         LessonRepository lessonRepository,
-        EnrollmentRepository enrollmentRepository
+        EnrollmentRepository enrollmentRepository,
+        UserRepository userRepository
     ) {
         this.videoServiceFactory = videoServiceFactory;
         this.lessonRepository = lessonRepository;
         this.enrollmentRepository = enrollmentRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -64,6 +69,19 @@ public class VideoService {
     public LessonEntity confirmUpload(Long lessonId, Long educatorId, String videoId) {
         VideoStoragePort provider = videoServiceFactory.getVideoStorage();
         return provider.confirmUpload(lessonId, educatorId, videoId);
+    }
+
+    /**
+     * Get watermark text for a user (their email).
+     *
+     * @param userId the user ID
+     * @return the user's email as watermark text
+     * @throws EntityNotFoundException if user not found
+     */
+    public String getWatermarkText(Long userId) {
+        UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));
+        return user.getEmail();
     }
 
     /**
@@ -114,6 +132,13 @@ public class VideoService {
         }
 
         // Get signed playback URL from provider
-        return provider.getPlaybackUrlWithSign(videoId);
+        String watermarkText = getWatermarkText(userId);
+        VideoPlaybackResponse response = provider.getPlaybackUrlWithSign(videoId);
+        return new VideoPlaybackResponse(
+            response.playbackUrl(),
+            response.duration(),
+            response.coverImage(),
+            watermarkText
+        );
     }
 }
