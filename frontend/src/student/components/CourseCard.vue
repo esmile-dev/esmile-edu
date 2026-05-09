@@ -11,7 +11,7 @@ defineProps<{
     class="cursor-pointer transition-transform hover:-translate-y-1 h-full"
   >
     <Card class="overflow-hidden h-full flex flex-col">
-      <div class="aspect-video bg-muted shrink-0">
+      <div class="aspect-video bg-muted shrink-0 border-b">
         <img
           v-if="course.cover"
           :src="course.cover"
@@ -22,7 +22,7 @@ defineProps<{
           无封面
         </div>
       </div>
-      <CardContent class="p-4 pt-5">
+      <CardContent class="p-4 pt-5 bg-slate-50/50 dark:bg-slate-900/20 flex-grow">
         <div class="flex items-start justify-between gap-2">
           <h3 class="font-semibold line-clamp-2">{{ course.title }}</h3>
         </div>
