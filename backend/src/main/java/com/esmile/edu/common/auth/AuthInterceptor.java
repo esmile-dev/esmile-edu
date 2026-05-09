@@ -39,13 +39,25 @@ public class AuthInterceptor implements HandlerInterceptor {
         RequireAuth requireAuth = AnnotationUtils.findAnnotation(handlerMethod.getMethod(), RequireAuth.class);
         RequireRole requireRole = AnnotationUtils.findAnnotation(handlerMethod.getMethod(), RequireRole.class);
 
-        // 如果没有 RequireAuth 注解，放行（可能是公开接口）
+        // 获取 Authorization header
+        String authHeader = request.getHeader(HEADER_AUTHORIZATION);
+
+        // 如果没有 RequireAuth 注解，检查是否有 token，有的话尝试解析，没有直接放行（公开接口）
         if (requireAuth == null && requireRole == null) {
+            if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+                try {
+                    String token = authHeader.substring(BEARER_PREFIX.length());
+                    if (jwtService.validateToken(token)) {
+                        Long userId = jwtService.getUserIdFromToken(token);
+                        userRepository.findById(userId).ifPresent(AuthContext::setCurrentUser);
+                    }
+                } catch (Exception e) {
+                    // 忽略解析错误，对于公开接口不强制要求有效 token
+                }
+            }
             return true;
         }
 
-        // 获取 Authorization header
-        String authHeader = request.getHeader(HEADER_AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
             throw new AuthenticationException(
                     AuthenticationException.INVALID_TOKEN,

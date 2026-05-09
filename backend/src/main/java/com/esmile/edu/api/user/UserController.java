@@ -5,6 +5,8 @@ import com.esmile.edu.common.ApiResponse;
 import com.esmile.edu.common.auth.AuthContext;
 import com.esmile.edu.common.auth.RequireAuth;
 import com.esmile.edu.common.auth.RequireRole;
+import com.esmile.edu.common.exception.user.InvalidCredentialsException;
+import com.esmile.edu.dto.request.LoginRequest;
 import com.esmile.edu.dto.request.SendCodeRequest;
 import com.esmile.edu.dto.request.VerifyCodeRequest;
 import com.esmile.edu.dto.response.AuthResponse;
@@ -55,6 +57,16 @@ public class UserController {
         return ApiResponse.ok(userBizService.verifyCode(request.email(), request.code(), Role.STUDENT));
     }
 
+    // 学生认证 - 密码登录
+    @PostMapping("/student/auth/login")
+    public ApiResponse<AuthResponse> loginStudent(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = userBizService.login(request);
+        if (response.user().role() != Role.STUDENT) {
+            throw new InvalidCredentialsException();
+        }
+        return ApiResponse.ok(response);
+    }
+
     @GetMapping("/student/auth/me")
     @RequireAuth
     public ApiResponse<UserResponse> getCurrentStudent() {
@@ -79,6 +91,16 @@ public class UserController {
     @RequireAuth
     public ApiResponse<UserResponse> getCurrentTeacher() {
         return ApiResponse.ok(userBizService.findById(AuthContext.getCurrentUserId()));
+    }
+
+    // 管理员密码登录
+    @PostMapping("/admin/auth/login")
+    public ApiResponse<AuthResponse> loginAdmin(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = userBizService.login(request);
+        if (response.user().role() != Role.ADMIN) {
+            throw new InvalidCredentialsException();
+        }
+        return ApiResponse.ok(response);
     }
 
     // 管理员接口
