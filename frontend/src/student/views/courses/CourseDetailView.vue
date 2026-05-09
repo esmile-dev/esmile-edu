@@ -118,47 +118,50 @@ function getInitials(name: string) {
 
           <!-- Sidebar -->
           <div>
-            <Card class="sticky top-24">
-              <CardContent class="p-6 space-y-4">
+            <Card class="sticky top-24 border shadow-sm rounded-xl bg-white dark:bg-slate-900">
+              <CardContent class="p-6 pt-7 space-y-6">
                 <!-- Instructor -->
-                <div class="flex items-center gap-3">
-                  <Avatar>
+                <div class="flex items-center gap-4">
+                  <Avatar class="h-16 w-16 shadow-sm border border-slate-100 dark:border-slate-800">
                     <AvatarImage
                       v-if="course.educatorAvatar"
                       :src="course.educatorAvatar"
                       :alt="course.educatorName"
+                      class="object-cover"
                     />
-                    <AvatarFallback class="bg-primary text-primary-foreground">
+                    <AvatarFallback class="bg-[#0A1930] text-white text-2xl font-medium">
                       {{ getInitials(course.educatorName || 'T') }}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p class="font-medium">{{ course.educatorName }}</p>
-                    <p class="text-sm text-muted-foreground">讲师</p>
+                  <div class="flex flex-col justify-center">
+                    <p class="text-xl font-bold text-foreground">{{ course.educatorName }}</p>
+                    <p class="text-sm text-muted-foreground mt-1">讲师</p>
                   </div>
                 </div>
 
                 <!-- Stats -->
-                <div class="flex gap-4 text-sm">
-                  <span class="text-muted-foreground">
-                    {{ course.chapters?.length || 0 }} 章节
-                  </span>
-                  <span class="text-muted-foreground">
-                    {{ course.chapters?.reduce((sum, ch) => sum + (ch.lessons?.length || 0), 0) || 0 }} 课时
-                  </span>
+                <div class="flex items-center gap-6 text-sm font-medium text-muted-foreground">
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-lg font-bold text-slate-700 dark:text-slate-200">{{ course.chapters?.length || 0 }}</span>
+                    <span>章节</span>
+                  </div>
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-lg font-bold text-slate-700 dark:text-slate-200">{{ course.chapters?.reduce((sum, ch) => sum + (ch.lessons?.length || 0), 0) || 0 }}</span>
+                    <span>课时</span>
+                  </div>
                 </div>
 
                 <!-- Action -->
-                <div v-if="course.enrollmentStatus === 'ACTIVE'">
-                  <Button class="w-full" @click="handleContinue">
+                <div v-if="course.enrollmentStatus === 'ACTIVE'" class="pt-2">
+                  <Button class="w-full h-12 rounded-lg text-base font-medium shadow-sm bg-[#0A1930] text-white hover:bg-[#0A1930]/90" @click="handleContinue">
                     继续学习
                   </Button>
-                  <p class="text-center text-sm text-muted-foreground mt-2">
+                  <p class="text-center text-xs text-muted-foreground mt-3">
                     有效期至: {{ course.enrollmentExpiresAt || '永久' }}
                   </p>
                 </div>
-                <div v-else>
-                  <Button class="w-full" @click="handleEnroll">
+                <div v-else class="pt-2">
+                  <Button class="w-full h-12 rounded-lg text-base font-medium shadow-sm bg-[#0A1930] text-white hover:bg-[#0A1930]/90" @click="handleEnroll">
                     立即兑换
                   </Button>
                 </div>
