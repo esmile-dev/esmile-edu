@@ -17,7 +17,8 @@ public record CourseResponse(
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     int chapterCount,
-    int lessonCount
+    int lessonCount,
+    String enrollmentStatus
 ) {
     public static CourseResponse from(CourseEntity entity, String educatorName) {
         return new CourseResponse(
@@ -31,7 +32,8 @@ public record CourseResponse(
             entity.getCreatedAt(),
             entity.getUpdatedAt(),
             0,
-            0
+            0,
+            null
         );
     }
 
@@ -47,7 +49,8 @@ public record CourseResponse(
             entity.getCreatedAt(),
             entity.getUpdatedAt(),
             chapterCount,
-            lessonCount
+            lessonCount,
+            null
         );
     }
 
@@ -63,7 +66,25 @@ public record CourseResponse(
             entity.getCreatedAt(),
             entity.getUpdatedAt(),
             chapters.size(),
-            chapters.stream().mapToInt(ch -> ch.lessons().size()).sum()
+            chapters.stream().mapToInt(ch -> ch.lessons().size()).sum(),
+            null
+        );
+    }
+
+    public static CourseResponse from(CourseEntity entity, String educatorName, int chapterCount, int lessonCount, String enrollmentStatus) {
+        return new CourseResponse(
+            entity.getId(),
+            entity.getTitle(),
+            entity.getDescription(),
+            entity.getEducatorId(),
+            educatorName,
+            entity.getCover(),
+            entity.getStatus(),
+            entity.getCreatedAt(),
+            entity.getUpdatedAt(),
+            chapterCount,
+            lessonCount,
+            enrollmentStatus
         );
     }
 }

@@ -154,13 +154,24 @@ public class CourseBizService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseResponse> listCourses(Pageable pageable) {
-        return courseRepository.findByStatus(CourseStatus.PUBLISHED, pageable)
-            .map(course -> CourseResponse.from(
+    public Page<CourseResponse> listCourses(Pageable pageable, Long userId) {
+        Page<CourseEntity> coursePage = courseRepository.findByStatus(CourseStatus.PUBLISHED, pageable);
+        
+        java.util.Map<Long, String> enrollmentMap = new java.util.HashMap<>();
+        if (userId != null) {
+            List<Long> courseIds = coursePage.getContent().stream().map(CourseEntity::getId).toList();
+            if (!courseIds.isEmpty()) {
+                List<EnrollmentEntity> enrollments = enrollmentRepository.findByUserIdAndCourseIdIn(userId, courseIds);
+                enrollments.forEach(e -> enrollmentMap.put(e.getCourseId(), e.getStatus().name()));
+            }
+        }
+
+        return coursePage.map(course -> CourseResponse.from(
                 course,
                 getEducatorName(course.getEducatorId()),
                 (int) chapterRepository.countByCourseId(course.getId()),
-                (int) lessonRepository.countByCourseId(course.getId())
+                (int) lessonRepository.countByCourseId(course.getId()),
+                enrollmentMap.get(course.getId())
             ));
     }
 

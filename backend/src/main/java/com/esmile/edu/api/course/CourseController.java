@@ -70,7 +70,7 @@ public class CourseController {
     // 课程浏览（学生端）
     @GetMapping("/student/courses")
     public ApiResponse<Page<CourseResponse>> listCourses(Pageable pageable) {
-        return ApiResponse.ok(courseBizService.listCourses(pageable));
+        return ApiResponse.ok(courseBizService.listCourses(pageable, AuthContext.getCurrentUserId()));
     }
 
     @GetMapping("/student/courses/{id}")
