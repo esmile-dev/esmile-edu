@@ -62,7 +62,7 @@ async function addLesson(chapterId: number) {
     await teacherApi.createLesson({
       chapterId,
       title,
-      orderNum: (chapter?.lessons?.length || 0) + 1,
+      position: (chapter?.lessons?.length || 0) + 1,
     })
     newLessonTitles.value[chapterId] = ''
     // Refresh
@@ -134,7 +134,7 @@ function goToLesson(courseId: number, lessonId: number) {
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <component :is="expandedChapters.has(chapter.id) ? ChevronDown : ChevronRight" class="w-4 h-4" />
-                  <span class="font-medium">{{ chapter.orderNum }}. {{ chapter.title }}</span>
+                  <span class="font-medium">{{ chapter.position }}. {{ chapter.title }}</span>
                 </div>
                 <Button size="sm" variant="ghost" @click.stop="deleteChapter(chapter.id)">
                   <Trash2 class="w-4 h-4" />
