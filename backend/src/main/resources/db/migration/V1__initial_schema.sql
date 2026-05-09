@@ -1,8 +1,8 @@
 -- V1__initial_schema.sql
--- esmile-edu Education Platform MVP Database Schema
+-- esmile-edu Education Platform MVP Database Schema (Idempotent)
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
@@ -16,12 +16,12 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 
 -- Courses table
-CREATE TABLE courses (
+CREATE TABLE IF NOT EXISTS courses (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
@@ -33,11 +33,11 @@ CREATE TABLE courses (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_courses_educator ON courses(educator_id);
-CREATE INDEX idx_courses_status ON courses(status);
+CREATE INDEX IF NOT EXISTS idx_courses_educator ON courses(educator_id);
+CREATE INDEX IF NOT EXISTS idx_courses_status ON courses(status);
 
 -- Chapters table
-CREATE TABLE chapters (
+CREATE TABLE IF NOT EXISTS chapters (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     course_id BIGINT NOT NULL,
@@ -47,11 +47,11 @@ CREATE TABLE chapters (
     CONSTRAINT fk_chapters_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_chapters_course ON chapters(course_id);
-CREATE INDEX idx_chapters_position ON chapters(course_id, position);
+CREATE INDEX IF NOT EXISTS idx_chapters_course ON chapters(course_id);
+CREATE INDEX IF NOT EXISTS idx_chapters_position ON chapters(course_id, position);
 
 -- Lessons table
-CREATE TABLE lessons (
+CREATE TABLE IF NOT EXISTS lessons (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     chapter_id BIGINT NOT NULL,
@@ -67,12 +67,12 @@ CREATE TABLE lessons (
     CONSTRAINT fk_lessons_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_lessons_chapter ON lessons(chapter_id);
-CREATE INDEX idx_lessons_course ON lessons(course_id);
-CREATE INDEX idx_lessons_position ON lessons(course_id, position);
+CREATE INDEX IF NOT EXISTS idx_lessons_chapter ON lessons(chapter_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_course ON lessons(course_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_position ON lessons(course_id, position);
 
 -- Enrollments table
-CREATE TABLE enrollments (
+CREATE TABLE IF NOT EXISTS enrollments (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     course_id BIGINT NOT NULL,
@@ -87,12 +87,12 @@ CREATE TABLE enrollments (
     CONSTRAINT uk_enrollment_user_course UNIQUE (user_id, course_id)
 );
 
-CREATE INDEX idx_enrollments_user ON enrollments(user_id);
-CREATE INDEX idx_enrollments_course ON enrollments(course_id);
-CREATE INDEX idx_enrollments_status ON enrollments(status);
+CREATE INDEX IF NOT EXISTS idx_enrollments_user ON enrollments(user_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_status ON enrollments(status);
 
 -- Redeem codes table
-CREATE TABLE redeem_codes (
+CREATE TABLE IF NOT EXISTS redeem_codes (
     id BIGSERIAL PRIMARY KEY,
     code VARCHAR(255) NOT NULL UNIQUE,
     course_id BIGINT NOT NULL,
@@ -108,10 +108,10 @@ CREATE TABLE redeem_codes (
     CONSTRAINT fk_redeem_codes_creator FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
-CREATE INDEX idx_redeem_codes_code ON redeem_codes(code);
-CREATE INDEX idx_redeem_codes_course ON redeem_codes(course_id);
-CREATE INDEX idx_redeem_codes_status ON redeem_codes(status);
-CREATE INDEX idx_redeem_codes_created_by ON redeem_codes(created_by);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_code ON redeem_codes(code);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_course ON redeem_codes(course_id);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_status ON redeem_codes(status);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_created_by ON redeem_codes(created_by);
 
 -- Comments for documentation
 COMMENT ON TABLE users IS 'User accounts for students, teachers, and admins';

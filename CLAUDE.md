@@ -285,7 +285,36 @@ public class User extends BaseEntity {
 
 ---
 
-### 4.6 DTO 规范
+### 4.6 SQL 脚本规范
+
+**幂等性要求**：所有 SQL 脚本必须保证幂等性，即多次执行结果一致。
+
+**实现方式**：
+- 使用 `CREATE TABLE IF NOT EXISTS` 而非 `CREATE TABLE`
+- 使用 `INSERT ... ON CONFLICT DO NOTHING` 处理插入
+- 使用 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` 添加列
+- 删除操作前先检查：`DROP TABLE IF EXISTS`、`DROP COLUMN IF EXISTS`
+
+**示例**：
+```sql
+-- 创建表（幂等）
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- 插入数据（幂等）
+INSERT INTO users (email, nickname)
+VALUES ('test@example.com', 'Test')
+ON CONFLICT (email) DO NOTHING;
+
+-- 添加列（幂等）
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);
+```
+
+---
+
+### 4.7 DTO 规范
 
 **使用 Java Record** (Java 17+):
 ```java
@@ -307,7 +336,7 @@ public record UserResponse(Long id, String email, String nickname, Role role) {}
 
 ---
 
-### 4.7 REST API 规范
+### 4.8 REST API 规范
 
 **URL 规范**:
 - 使用名词复数: `/api/v1/users`, `/api/v1/courses`
@@ -329,7 +358,7 @@ public record UserResponse(Long id, String email, String nickname, Role role) {}
 
 ---
 
-### 4.8 分层包架构
+### 4.9 分层包架构
 
 #### 4.8.1 分层职责
 

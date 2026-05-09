@@ -1,8 +1,8 @@
 -- V2__verification_codes.sql
--- Verification codes and rate limiting tables
+-- Verification codes and rate limiting tables (Idempotent)
 
 -- Verification codes table
-CREATE TABLE verification_codes (
+CREATE TABLE IF NOT EXISTS verification_codes (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
     code VARCHAR(6) NOT NULL,
@@ -14,11 +14,11 @@ CREATE TABLE verification_codes (
     CONSTRAINT uk_verification_code_email_code UNIQUE (email, code)
 );
 
-CREATE INDEX idx_verification_codes_email ON verification_codes(email);
-CREATE INDEX idx_verification_codes_expires_at ON verification_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_verification_codes_email ON verification_codes(email);
+CREATE INDEX IF NOT EXISTS idx_verification_codes_expires_at ON verification_codes(expires_at);
 
 -- Rate limit requests table
-CREATE TABLE rate_limit_requests (
+CREATE TABLE IF NOT EXISTS rate_limit_requests (
     id BIGSERIAL PRIMARY KEY,
     identifier VARCHAR(255) NOT NULL,
     identifier_type VARCHAR(20) NOT NULL CHECK (identifier_type IN ('EMAIL', 'IP')),
@@ -30,5 +30,5 @@ CREATE TABLE rate_limit_requests (
     CONSTRAINT uk_rate_limit_identifier_window UNIQUE (identifier, identifier_type, window_start)
 );
 
-CREATE INDEX idx_rate_limit_identifier ON rate_limit_requests(identifier);
-CREATE INDEX idx_rate_limit_window ON rate_limit_requests(window_start, window_end);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_identifier ON rate_limit_requests(identifier);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_window ON rate_limit_requests(window_start, window_end);

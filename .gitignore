@@ -31,3 +31,4 @@ npm-debug.log*
 
 # Toolkit (personal tools)
 toolkit/
+/backend/target/
