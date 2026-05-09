@@ -25,6 +25,10 @@ export const studentApi = {
     return apiClient.post<LoginResponse>('/api/v1/student/auth/verify-code', { email, code })
   },
 
+  async login(email: string, password: string): Promise<LoginResponse> {
+    return apiClient.post<LoginResponse>('/api/v1/student/auth/login', { email, password })
+  },
+
   async getMe(): Promise<User> {
     return apiClient.get<User>('/api/v1/student/auth/me')
   },
@@ -58,5 +62,14 @@ export const studentApi = {
     size?: number
   }): Promise<PageResponse<MyCourse>> {
     return apiClient.get<PageResponse<MyCourse>>('/api/v1/student/my-courses', params)
+  },
+
+  // Progress
+  async updateProgress(data: {
+    lessonId: number
+    watchedSeconds: number
+    isCompleted?: boolean
+  }): Promise<void> {
+    return apiClient.post('/api/v1/student/progress', data)
   },
 }

@@ -2,6 +2,7 @@ package com.esmile.edu.dto.response;
 
 import com.esmile.edu.module.course.CourseEntity;
 import com.esmile.edu.module.course.CourseStatus;
+import com.esmile.edu.module.course.EnrollmentStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,9 +16,12 @@ public record CourseDetailResponse(
     String cover,
     CourseStatus status,
     LocalDateTime publishedAt,
-    List<ChapterResponse> chapters
+    List<ChapterResponse> chapters,
+    EnrollmentStatus enrollmentStatus,
+    LocalDateTime enrollmentExpiresAt,
+    Long currentLessonId
 ) {
-    public static CourseDetailResponse from(CourseEntity entity, String educatorName, String educatorAvatar, List<ChapterResponse> chapters) {
+    public static CourseDetailResponse from(CourseEntity entity, String educatorName, String educatorAvatar, List<ChapterResponse> chapters, EnrollmentStatus enrollmentStatus, LocalDateTime enrollmentExpiresAt, Long currentLessonId) {
         return new CourseDetailResponse(
             entity.getId(),
             entity.getTitle(),
@@ -28,7 +32,10 @@ public record CourseDetailResponse(
             entity.getCover(),
             entity.getStatus(),
             entity.getPublishedAt(),
-            chapters
+            chapters,
+            enrollmentStatus,
+            enrollmentExpiresAt,
+            currentLessonId
         );
     }
 }

@@ -51,8 +51,9 @@ export interface Course {
   status?: CourseStatus
   chapterCount?: number
   lessonCount?: number
-  enrollmentStatus?: EnrollmentStatus
-  enrollmentExpiresAt?: string | null
+  enrollmentStatus?: 'ACTIVE' | 'EXPIRED' | 'CANCELLED'
+  enrollmentExpiresAt?: string
+  currentLessonId?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -61,7 +62,7 @@ export interface Chapter {
   id: number
   courseId?: number
   title: string
-  orderNum: number
+  position: number
   lessons: Lesson[]
 }
 
@@ -72,8 +73,10 @@ export interface Lesson {
   videoId?: string
   videoUrl?: string
   duration?: number
-  orderNum: number
+  position: number
   status: LessonStatus
+  watchedSeconds?: number
+  isCompleted?: boolean
 }
 
 export interface CourseDetail extends Course {
@@ -108,18 +111,18 @@ export interface CreateChapterRequest {
 
 export interface UpdateChapterRequest {
   title?: string
-  orderNum?: number
+  position?: number
 }
 
 export interface CreateLessonRequest {
   chapterId: number
   title: string
-  orderNum: number
+  position: number
 }
 
 export interface UpdateLessonRequest {
   title?: string
-  orderNum?: number
+  position?: number
 }
 
 // ============== Enrollment Types ==============

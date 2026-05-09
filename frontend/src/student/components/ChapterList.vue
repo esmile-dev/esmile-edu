@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Chapter, Lesson } from '@/common/types/api'
-import { ChevronDown, ChevronRight, Play } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Play, CheckCircle2, Circle, PlayCircle, Lock } from 'lucide-vue-next'
 
 const props = defineProps<{
   chapters: Chapter[]
@@ -48,7 +48,7 @@ function formatDuration(seconds: number | null | undefined): string {
                 :is="isExpanded(chapter.id) ? ChevronDown : ChevronRight"
                 class="w-4 h-4"
               />
-              <span class="font-medium">{{ chapter.orderNum }}. {{ chapter.title }}</span>
+              <span class="font-medium">{{ chapter.position }}. {{ chapter.title }}</span>
             </div>
             <Badge variant="secondary">{{ chapter.lessons?.length || 0 }} 课时</Badge>
           </div>
@@ -59,12 +59,18 @@ function formatDuration(seconds: number | null | undefined): string {
               v-for="lesson in chapter.lessons"
               :key="lesson.id"
               :id="`lesson-${lesson.id}`"
-              class="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer"
-              @click="emit('selectLesson', lesson)"
+              class="flex items-center justify-between p-2 rounded"
+              :class="[enrolled ? 'hover:bg-muted/50 cursor-pointer' : 'cursor-not-allowed opacity-80']"
+              @click="enrolled && emit('selectLesson', lesson)"
             >
               <div class="flex items-center gap-3">
-                <Play class="w-4 h-4 text-muted-foreground" />
-                <span>{{ lesson.title }}</span>
+                <template v-if="enrolled">
+                  <CheckCircle2 v-if="lesson.isCompleted" class="w-4 h-4 text-green-500" />
+                  <PlayCircle v-else-if="lesson.watchedSeconds" class="w-4 h-4 text-blue-500" />
+                  <Circle v-else class="w-4 h-4 text-muted-foreground" />
+                </template>
+                <Lock v-else class="w-4 h-4 text-muted-foreground" />
+                <span :class="{'text-muted-foreground': (enrolled && lesson.isCompleted) || !enrolled}">{{ lesson.title }}</span>
               </div>
               <div class="flex items-center gap-2">
                 <Badge

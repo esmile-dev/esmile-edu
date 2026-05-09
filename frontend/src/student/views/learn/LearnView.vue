@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { studentApi } from '@/student/api/studentApi'
 import type { CourseDetail, Lesson } from '@/common/types/api'
@@ -45,10 +45,58 @@ function handleVideoError(err: Error) {
   videoError.value = err.message
 }
 
+let lastProgressUpdate = 0
+let updateTimeout: number | null = null
+
+function handleTimeUpdate(currentTime: number) {
+  // Update progress every 5 seconds
+  if (currentTime - lastProgressUpdate > 5 || currentTime < lastProgressUpdate) {
+    lastProgressUpdate = currentTime
+    syncProgress(Math.floor(currentTime), false)
+  }
+}
+
+function handleVideoEnded() {
+  syncProgress(Math.floor(lastProgressUpdate), true)
+}
+
+async function syncProgress(seconds: number, completed: boolean) {
+  if (!currentLesson.value) return
+  
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
+  }
+  
+  updateTimeout = window.setTimeout(async () => {
+    try {
+      await studentApi.updateProgress({
+        lessonId: currentLesson.value!.id,
+        watchedSeconds: seconds,
+        isCompleted: completed
+      })
+      if (currentLesson.value) {
+        currentLesson.value.watchedSeconds = seconds
+        if (completed) currentLesson.value.isCompleted = true
+      }
+    } catch (e) {
+      console.error('Failed to sync progress', e)
+    }
+  }, 1000)
+}
+
+onUnmounted(() => {
+  if (updateTimeout) clearTimeout(updateTimeout)
+})
+
 function navigateToLesson(lesson: Lesson) {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
+    syncProgress(Math.floor(lastProgressUpdate), false)
+  }
   router.push(`/student/learn/${courseId}/${lesson.id}`)
   currentLesson.value = lesson
   videoError.value = ''
+  lastProgressUpdate = 0
 }
 
 function getAllLessons(): Lesson[] {
@@ -92,7 +140,12 @@ function getPrevLesson(): Lesson | null {
         <div class="bg-black">
           <VideoPlayer
             v-if="currentLesson?.videoUrl && currentLesson?.status === 'READY'"
+            :key="currentLesson.id"
             :video-url="currentLesson.videoUrl"
+            :start-time="currentLesson.watchedSeconds || 0"
+            autoplay
+            @timeupdate="handleTimeUpdate"
+            @ended="handleVideoEnded"
             @error="handleVideoError"
           />
           <div v-else class="w-full aspect-video flex items-center justify-center text-white">

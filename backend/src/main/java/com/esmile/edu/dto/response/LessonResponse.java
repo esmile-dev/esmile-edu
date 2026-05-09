@@ -10,7 +10,9 @@ public record LessonResponse(
     String videoId,
     String videoUrl,
     Integer duration,
-    LessonStatus status
+    LessonStatus status,
+    Integer watchedSeconds,
+    Boolean isCompleted
 ) {
     public static LessonResponse from(LessonEntity entity) {
         return new LessonResponse(
@@ -20,7 +22,23 @@ public record LessonResponse(
             entity.getVideoId(),
             entity.getVideoUrl(),
             entity.getDuration(),
-            entity.getStatus()
+            entity.getStatus(),
+            0,
+            false
+        );
+    }
+    
+    public static LessonResponse from(LessonEntity entity, Integer watchedSeconds, Boolean isCompleted) {
+        return new LessonResponse(
+            entity.getId(),
+            entity.getTitle(),
+            entity.getPosition(),
+            entity.getVideoId(),
+            entity.getVideoUrl(),
+            entity.getDuration(),
+            entity.getStatus(),
+            watchedSeconds,
+            isCompleted
         );
     }
 }

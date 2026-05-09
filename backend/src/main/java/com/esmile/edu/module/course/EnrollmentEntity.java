@@ -32,6 +32,12 @@ public class EnrollmentEntity extends BaseEntity {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Column(name = "current_lesson_id")
+    private Long currentLessonId;
+
+    @Column(name = "progress_percent")
+    private Integer progressPercent = 0;
+
     // 构造函数
     public EnrollmentEntity() {}
 

@@ -22,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.LocalDateTime;
+
+import com.esmile.edu.dto.request.UpdateProgressRequest;
 
 @Service
 public class CourseBizService {
@@ -29,6 +32,7 @@ public class CourseBizService {
     private final ChapterRepository chapterRepository;
     private final LessonRepository lessonRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final LearningProgressRepository learningProgressRepository;
     private final UserRepository userRepository;
 
     public CourseBizService(
@@ -36,11 +40,13 @@ public class CourseBizService {
             ChapterRepository chapterRepository,
             LessonRepository lessonRepository,
             EnrollmentRepository enrollmentRepository,
+            LearningProgressRepository learningProgressRepository,
             UserRepository userRepository) {
         this.courseRepository = courseRepository;
         this.chapterRepository = chapterRepository;
         this.lessonRepository = lessonRepository;
         this.enrollmentRepository = enrollmentRepository;
+        this.learningProgressRepository = learningProgressRepository;
         this.userRepository = userRepository;
     }
 
@@ -110,18 +116,41 @@ public class CourseBizService {
     }
 
     @Transactional(readOnly = true)
-    public CourseDetailResponse getCourseDetail(Long courseId) {
+    public CourseDetailResponse getCourseDetail(Long courseId, Long userId) {
         CourseEntity course = courseRepository.findById(courseId)
             .orElseThrow(() -> new CourseNotFoundException(courseId));
         List<ChapterEntity> chapters = chapterRepository.findByCourseIdOrderByPosition(courseId);
+        List<LearningProgressEntity> progressList = userId != null ? learningProgressRepository.findByUserIdAndCourseId(userId, courseId) : List.of();
+        java.util.Map<Long, LearningProgressEntity> progressMap = progressList.stream()
+            .collect(java.util.stream.Collectors.toMap(LearningProgressEntity::getLessonId, p -> p));
+
         List<ChapterResponse> chapterResponses = chapters.stream()
             .map(ch -> {
                 List<LessonEntity> lessons = lessonRepository.findByChapterIdOrderByPosition(ch.getId());
-                return ChapterResponse.from(ch, lessons.stream().map(LessonResponse::from).toList());
+                return ChapterResponse.from(ch, lessons.stream().map(l -> {
+                    LearningProgressEntity p = progressMap.get(l.getId());
+                    if (p != null) {
+                        return LessonResponse.from(l, p.getWatchedSeconds(), p.getIsCompleted());
+                    }
+                    return LessonResponse.from(l);
+                }).toList());
             })
             .toList();
         EducatorInfo educatorInfo = getEducatorInfo(course.getEducatorId());
-        return CourseDetailResponse.from(course, educatorInfo.name(), educatorInfo.avatar(), chapterResponses);
+
+        EnrollmentStatus enrollmentStatus = null;
+        java.time.LocalDateTime enrollmentExpiresAt = null;
+        Long currentLessonId = null;
+        if (userId != null) {
+            java.util.Optional<EnrollmentEntity> enrollmentOpt = enrollmentRepository.findByUserIdAndCourseId(userId, courseId);
+            if (enrollmentOpt.isPresent()) {
+                enrollmentStatus = enrollmentOpt.get().getStatus();
+                enrollmentExpiresAt = enrollmentOpt.get().getExpiresAt();
+                currentLessonId = enrollmentOpt.get().getCurrentLessonId();
+            }
+        }
+        
+        return CourseDetailResponse.from(course, educatorInfo.name(), educatorInfo.avatar(), chapterResponses, enrollmentStatus, enrollmentExpiresAt, currentLessonId);
     }
 
     @Transactional(readOnly = true)
@@ -266,5 +295,38 @@ public class CourseBizService {
             .filter(c -> c != null)
             .map(c -> CourseResponse.from(c, educatorNameMap.getOrDefault(c.getEducatorId(), "未知讲师")))
             .toList();
+    }
+
+    @Transactional
+    public void updateProgress(Long userId, UpdateProgressRequest request) {
+        LessonEntity lesson = lessonRepository.findById(request.lessonId())
+            .orElseThrow(() -> new LessonNotFoundException(request.lessonId()));
+        Long courseId = lesson.getCourseId();
+
+        // 验证用户是否已报名此课程
+        if (!enrollmentRepository.existsByUserIdAndCourseId(userId, courseId)) {
+            throw new AuthorizationException(AuthorizationException.ACCESS_DENIED, "未报名此课程");
+        }
+
+        LearningProgressEntity progress = learningProgressRepository.findByUserIdAndLessonId(userId, request.lessonId())
+            .orElseGet(() -> new LearningProgressEntity(userId, courseId, request.lessonId()));
+
+        if (request.watchedSeconds() != null) {
+            // Only update watchedSeconds if the new value is greater or if it's the first time
+            progress.setWatchedSeconds(Math.max(progress.getWatchedSeconds() != null ? progress.getWatchedSeconds() : 0, request.watchedSeconds()));
+        }
+        
+        if (request.isCompleted() != null && request.isCompleted()) {
+            progress.setIsCompleted(true);
+        }
+        
+        progress.setLastWatchedAt(LocalDateTime.now());
+        learningProgressRepository.save(progress);
+
+        // 更新 Enrollment 的当前进度
+        enrollmentRepository.findByUserIdAndCourseId(userId, courseId).ifPresent(enrollment -> {
+            enrollment.setCurrentLessonId(request.lessonId());
+            enrollmentRepository.save(enrollment);
+        });
     }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUpdated } from 'vue'
+import { ref, computed, onMounted, onUpdated } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { studentApi } from '@/student/api/studentApi'
 import type { CourseDetail } from '@/common/types/api'
@@ -21,6 +21,8 @@ onMounted(async () => {
     // Check if coming from "My Courses" with a specific lesson to scroll to
     if (route.query.lesson) {
       currentLessonId.value = Number(route.query.lesson)
+    } else if (course.value.currentLessonId) {
+      currentLessonId.value = course.value.currentLessonId
     }
   } catch (err: any) {
     error.value = err.message || '加载课程失败'
@@ -59,6 +61,20 @@ function handleContinue() {
 function getInitials(name: string) {
   return name ? name.charAt(0).toUpperCase() : 'T'
 }
+
+const progressPercent = computed(() => {
+  if (!course.value?.chapters) return 0
+  let totalLessons = 0
+  let completedLessons = 0
+  course.value.chapters.forEach(ch => {
+    if (ch.lessons) {
+      totalLessons += ch.lessons.length
+      completedLessons += ch.lessons.filter(l => l.isCompleted).length
+    }
+  })
+  if (totalLessons === 0) return 0
+  return Math.round((completedLessons / totalLessons) * 100)
+})
 </script>
 
 <template>
@@ -120,22 +136,52 @@ function getInitials(name: string) {
           <div>
             <Card class="sticky top-24 border shadow-sm rounded-xl bg-white dark:bg-slate-900">
               <CardContent class="p-6 pt-7 space-y-6">
-                <!-- Instructor -->
-                <div class="flex items-center gap-4">
-                  <Avatar class="h-16 w-16 shadow-sm border border-slate-100 dark:border-slate-800">
-                    <AvatarImage
-                      v-if="course.educatorAvatar"
-                      :src="course.educatorAvatar"
-                      :alt="course.educatorName"
-                      class="object-cover"
-                    />
-                    <AvatarFallback class="bg-[#0A1930] text-white text-2xl font-medium">
-                      {{ getInitials(course.educatorName || 'T') }}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div class="flex flex-col justify-center">
-                    <p class="text-xl font-bold text-foreground">{{ course.educatorName }}</p>
-                    <p class="text-sm text-muted-foreground mt-1">讲师</p>
+                <!-- Instructor & Progress -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <Avatar class="h-16 w-16 shadow-sm border border-slate-100 dark:border-slate-800">
+                      <AvatarImage
+                        v-if="course.educatorAvatar"
+                        :src="course.educatorAvatar"
+                        :alt="course.educatorName"
+                        class="object-cover"
+                      />
+                      <AvatarFallback class="bg-[#0A1930] text-white text-2xl font-medium">
+                        {{ getInitials(course.educatorName || 'T') }}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div class="flex flex-col justify-center">
+                      <p class="text-xl font-bold text-foreground">{{ course.educatorName }}</p>
+                      <p class="text-sm text-muted-foreground mt-1">讲师</p>
+                    </div>
+                  </div>
+
+                  <!-- Progress Circle -->
+                  <div v-if="course.enrollmentStatus === 'ACTIVE'" class="relative flex items-center justify-center w-16 h-16" title="课程进度">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                      <!-- Background Circle -->
+                      <path
+                        class="text-slate-100 dark:text-slate-800"
+                        stroke-width="3"
+                        stroke="currentColor"
+                        fill="none"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                      <!-- Progress Circle -->
+                      <path
+                        class="text-blue-600 transition-all duration-1000 ease-out"
+                        stroke-width="3"
+                        stroke-dasharray="100, 100"
+                        :stroke-dashoffset="100 - progressPercent"
+                        stroke-linecap="round"
+                        stroke="currentColor"
+                        fill="none"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      />
+                    </svg>
+                    <div class="absolute flex flex-col items-center justify-center text-xs font-bold text-blue-600">
+                      {{ progressPercent }}%
+                    </div>
                   </div>
                 </div>
 

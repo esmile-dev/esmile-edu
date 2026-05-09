@@ -11,6 +11,7 @@ import com.esmile.edu.dto.request.CreateLessonRequest;
 import com.esmile.edu.dto.request.UpdateChapterRequest;
 import com.esmile.edu.dto.request.UpdateCourseRequest;
 import com.esmile.edu.dto.request.UpdateLessonRequest;
+import com.esmile.edu.dto.request.UpdateProgressRequest;
 import com.esmile.edu.dto.response.ChapterResponse;
 import com.esmile.edu.dto.response.CourseDetailResponse;
 import com.esmile.edu.dto.response.CourseResponse;
@@ -74,7 +75,7 @@ public class CourseController {
 
     @GetMapping("/student/courses/{id}")
     public ApiResponse<CourseDetailResponse> getCourseDetail(@PathVariable Long id) {
-        return ApiResponse.ok(courseBizService.getCourseDetail(id));
+        return ApiResponse.ok(courseBizService.getCourseDetail(id, AuthContext.getCurrentUserId()));
     }
 
     // 章节管理
@@ -132,6 +133,13 @@ public class CourseController {
     @RequireAuth
     public ApiResponse<List<CourseResponse>> myCourses() {
         return ApiResponse.ok(courseBizService.listEnrolledCourses(AuthContext.getCurrentUserId()));
+    }
+
+    @PostMapping("/student/progress")
+    @RequireAuth
+    public ApiResponse<Void> updateProgress(@Valid @RequestBody UpdateProgressRequest request) {
+        courseBizService.updateProgress(AuthContext.getCurrentUserId(), request);
+        return ApiResponse.ok(null);
     }
 
     @GetMapping("/teacher/my-courses")
